@@ -1,0 +1,5 @@
+modelname,threshold,grps,min_gini,mean_gini,max_gini,nDCG@10,RR
+bm25_tctcolbert,0,1000,0.1787,0.2792,0.5924,,
+bm25_tctcolbert,30,1000,0.1803,0.2882,0.5994,,
+bm25_tctcolbert,60,1000,0.1886,0.3113,0.623,,
+bm25_tctcolbert,90,1000,0.2056,0.3784,0.7119,,
