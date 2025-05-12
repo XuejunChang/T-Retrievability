@@ -1,42 +1,56 @@
 import warnings
 warnings.filterwarnings('ignore')
 import pyterrier as pt
-if not pt.started():
-    pt.init()
+if not pt.java.started():
+    pt.java.init()
 
-from Lz4PickleCache import *
-import DocumentFilter
-import pandas as pd
-from pyterrier_t5 import MonoT5ReRanker
-import os
+import os, sys
+import fair_utils
+import config
 
-def create_index(inx, threshold, modelname, cache_file, nfs_dir, qual_signal=None):
-    index_file = f"{nfs_dir}/bm25/{modelname}-nostemmer-nostopwords-index-{str(threshold)}"
-
-    print(f"indexing into {index_file}")
-    indexer = (DocumentFilter(qual_signal=qual_signal, threshold=threshold)
-               >> pt.IterDictIndexer(index_file,stemmer=pt.TerrierStemmer.none, stopwords=pt.TerrierStemmer.none, verbose=True))
-    indexref = indexer.index(pt.tqdm(cache_file.get_corpus_iter()))
+def create_index(index_path, dataset):
+    print(f"indexing into {index_path}")
+    indexer = pt.IterDictIndexer(index_path,stemmer=pt.TerrierStemmer.none, stopwords=pt.TerrierStemmer.none, verbose=True)
+    indexref = indexer.index(dataset.get_corpus_iter(verbose=True))
 
     print('indexing done')
+    return indexref
 
-def evaluate_experiment(inx, threshold, modelname, dataset, rankername, topics, topics_ins, retrieve_num, nfs_dir):
-    index_file = f"{nfs_dir}/{rankername}/{modelname}-nostemmer-nostopwords-index-{str(threshold)}"
-    # cache_dir = f"{nfs_dir}/{rankername}/{rankername}_cache_{str(threshold)}"
-    # cached_bm25 = utils.get_cached_bm25(index_file, cache_dir)
-    retriever = pt.terrier.Retriever(index_file, wmodel='BM25', verbose=True)
-    retriever = retriever % retrieve_num
+def retrieve(index_path, modelname, dataset_name, topics_name, topics, retrieve_num, data_dir):
+    result_pkl = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.pkl'
+    if not os.path.exists(result_pkl):
+        retriever = pt.terrier.Retriever(index_path, wmodel='BM25', verbose=True) % retrieve_num
+        print(f'tramsforming into {result_pkl}')
+        df = retriever.transform(topics)
+        print(f'df columns {df.columns.tolist()}')
+        df = df[['qid','docid','docno','score','rank','query']]
 
-    bm25_csv = f'{nfs_dir}/{rankername}/df_{rankername}_{topics}_{inx * 30}.csv'
-    if os.path.exists(bm25_csv):
-       return bm25_csv
-    else:
-        print(f'tramsforming {rankername} {topics} at {inx * 30}%')
-        df = retriever.transform(topics_ins)
-        print(f'df of {rankername} columns {df.columns.tolist()}')
-        cols = ['qid','docid','docno','score','rank','query']
-        print(f'to to opt in in columns {cols}')
-        df = df[cols]
-        df.to_csv(bm25_csv,index=False)
-        print(f'saved {rankername} {topics} with shape {df.shape} into {bm25_csv}')
+        print(f'saved into {result_pkl}')
+        df.to_pickle(result_pkl)
+        print(f'done')
+
+    return result_pkl
+
+# order of args: [version] retrieve
+version = sys.argv[1]
+data_dir = f'{config.data_dir}/{version}'
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+
+run = sys.argv[2:]
+modelname = "bm25"
+index_path = f"{config.data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
+
+if __name__ == '__main__':
+    if 'index' in run:
+        create_index(index_path, config.dataset)
+
+    if 'retrieve' in run:
+        result_pkl = retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+
+        run_name=f'{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}'
+        trec_res = fair_utils.save_trec_res(result_pkl,run_name)
+        fair_utils.save_retrieved_docs_measures(result_pkl, trec_res)
+
+
 

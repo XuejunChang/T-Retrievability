@@ -1,0 +1,9 @@
+models/reranker-ms-marco-MiniLM-L-6-v2/**
+msmarco-data/
+models/
+wandb/
+output/
+.ipynb_checkpoints/
+**/events.out.tfevents.*
+__pycache__/
+.idea/

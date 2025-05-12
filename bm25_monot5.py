@@ -1,29 +1,48 @@
 import warnings
 warnings.filterwarnings('ignore')
 import pyterrier as pt
-if not pt.started():
-    pt.init()
+if not pt.java.started():
+    pt.java.init()
 
-from Lz4PickleCache import *
-import DocumentFilter
-import pandas as pd
+import os, sys, pandas as pd
+import fair_utils
+import config
 from pyterrier_t5 import MonoT5ReRanker
-import os
 import bm25
 
-def evaluate_experiment(inx, threshold, modelname, dataset, rankername, topics, topics_ins, retrieve_num, nfs_dir):
-    monot5_csv = f'{nfs_dir}/{rankername}/df_{rankername}_{topics}_{inx * 30}.csv'
-    if not os.path.exists(monot5_csv):
-        bm25_csv = bm25.evaluate_experiment(inx, threshold, modelname, dataset, "bm25", topics, topics_ins, retrieve_num, nfs_dir)
-        bm25_df = pd.read_csv(bm25_csv, index_col=0).reset_index()
+def retrieve(modelname, dataset_name, topics_name, topics, retrieve_num, data_dir):
+    result_pkl = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.pkl'
+    if not os.path.exists(result_pkl):
+        bm25_pkl = bm25.retrieve(None, "bm25", dataset_name, topics_name, topics, retrieve_num, data_dir)
+        bm25_df = pd.read_pickle(bm25_pkl).reset_index(drop=True)
         bm25_df[['qid', 'docno']] = bm25_df[['qid', 'docno']].astype(str)
+        dataset = pt.get_dataset(f'irds:{dataset_name}')
         monot5 = pt.text.get_text(dataset, 'text', verbose=True) >> MonoT5ReRanker(batch_size=16)
 
-        print(f'start tramsforming {rankername} {topics} at {inx * 30}%')
+        print(f'tramsforming into {result_pkl}')
         df = monot5.transform(bm25_df)
         print(f'df columns {df.columns.tolist()}')
         df = df[['qid', 'docid', 'docno', 'score', 'rank']]
-        print(f'to to opt in in shape {df.shape}')
 
-        df.to_csv(monot5_csv, index=False)
-        print(f'saved into {monot5_csv}')
+        print(f'saved into {result_pkl}')
+        df.to_pickle(result_pkl)
+        print(f'done')
+
+    return result_pkl
+
+# order of args: [version] retrieve
+version = sys.argv[1]
+data_dir = f'{config.data_dir}/{version}'
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+
+run = sys.argv[2:]
+modelname = "bm25_monot5"
+
+if __name__ == '__main__':
+    if 'retrieve' in run:
+        result_pkl = retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+
+        run_name=f'{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}'
+        trec_res = fair_utils.save_trec_res(result_pkl,run_name)
+        fair_utils.save_retrieved_docs_measures(result_pkl, trec_res)

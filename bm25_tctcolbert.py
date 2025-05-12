@@ -1,50 +1,49 @@
 import warnings
 warnings.filterwarnings('ignore')
 import pyterrier as pt
-if not pt.started():
-    pt.init()
+if not pt.java.started():
+    pt.java.init()
 
-# from DocumentFilter import *
-from Lz4PickleCache import *
-import pandas as pd
-import os
-import shutil
-import pyterrier_dr
-# rankername = os.path.basename(__file__).split('.')[0]
-
-import bm25
+import os, sys, pandas as pd
+import fair_utils
+import config
 import tctcolbert
-def evaluate_experiment(inx, threshold, modelname, dataset, rankername, topics, topics_ins, retrieve_num, nfs_dir):
-    index_path = f"{nfs_dir}/tctcolbert/{modelname}-tctcolbert-index-threshold-{threshold}.flex"
-    if not os.path.exists(index_path):
-        print(f"Index file {index_path} does not exist")
-        return
+import bm25
 
-    csv = f'{nfs_dir}/{rankername}/df_{rankername}_{topics}_{inx * 30}.csv'
-    if os.path.exists(csv):
-        print(f'file {csv} already exists')
-        # df = pd.read_csv(csv, index_col=0).reset_index()
-        return
-    else:
-        bm25_csv = bm25.evaluate_experiment(inx, threshold, modelname, dataset, "bm25", topics, topics_ins, retrieve_num, nfs_dir)
-        bm25_df = pd.read_csv(bm25_csv, index_col=0).reset_index()
+def retrieve(modelname, dataset_name, topics_name, topics, retrieve_num, data_dir):
+    result_pkl = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.pkl'
+    if not os.path.exists(result_pkl):
+        bm25_pkl = bm25.retrieve(None, "bm25", dataset_name, topics_name, topics, retrieve_num, data_dir)
+        bm25_df = pd.read_pickle(bm25_pkl).reset_index(drop=True)
         bm25_df[['qid', 'docno']] = bm25_df[['qid', 'docno']].astype(str)
 
-        print(f'start tramsforming {rankername} {topics} at {inx * 30}%')
+        dataset = pt.get_dataset(f'irds:{dataset_name}')
+        pipeline = pt.text.get_text(dataset, 'text', verbose=True) >> tctcolbert.model
+        print(f'tramsforming into {result_pkl}')
+        df = pipeline.transform(bm25_df)
+        print(f'df columns {df.columns.tolist()}')
+        df = df[['qid', 'docid', 'docno', 'score', 'rank']]
 
-        retr_pipeline = pt.text.get_text(dataset, 'text', verbose=True) >> tctcolbert.model
-        df = retr_pipeline.transform(bm25_df)
+        print(f'saved into {result_pkl}')
+        df.to_pickle(result_pkl)
+        print(f'done')
 
-        print(f'df of {rankername} {topics} columns {df.columns.tolist()}')
-        cols = ['qid', 'docid', 'docno', 'score', 'rank']
-        print(f'opt in columns {cols}')
-        df = df[cols]
-        df.to_csv(csv, index=False)
-        print(f'saved {rankername} {topics} with shape {df.shape} into {csv}')
-
-
-
+    return result_pkl
 
 
+# order of args: [version] retrieve
+version = sys.argv[1]
+data_dir = f'{config.data_dir}/{version}'
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
 
+run = sys.argv[2:]
+modelname = "bm25_tctcolbert"
 
+if __name__ == '__main__':
+    if 'retrieve' in run:
+        result_pkl = retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+
+        run_name=f'{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}'
+        trec_res = fair_utils.save_trec_res(result_pkl,run_name)
+        fair_utils.save_retrieved_docs_measures(result_pkl, trec_res)

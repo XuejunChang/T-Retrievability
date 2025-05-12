@@ -7,23 +7,21 @@ if not pt.java.started():
 import os, sys
 import fair_utils
 import config
-import pyterrier_dr
-model = pyterrier_dr.TctColBert('castorini/tct_colbert-v2-hnp-msmarco', verbose=True)
+
+import pyt_splade
+model = pyt_splade.Splade()
 
 def create_index(index_path, dataset):
     print(f"indexing into {index_path}")
-    index = pyterrier_dr.FlexIndex(f'{index_path}')
-    pipeline =  model >> index
-    pipeline.index(dataset.get_corpus_iter(verbose=True))
-    print(f'indexing done')
+    pipe = model.doc_encoder() >> pt.IterDictIndexer(index_path, stemmer=pt.TerrierStemmer.none, stopwords=pt.TerrierStemmer.none, pretokenised=True, verbose=True)
+    pipe.index(dataset.get_corpus_iter(verbose=True))
 
     return index_path
 
 def retrieve(index_path, modelname, dataset_name, topics_name, topics, retrieve_num, data_dir):
     result_pkl = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.pkl'
     if not os.path.exists(result_pkl):
-        index = pyterrier_dr.FlexIndex(index_path)
-        retriever = model >> index.torch_retriever() % retrieve_num
+        retriever = model.query_encoder() >> pt.terrier.Retriever(index_path, wmodel='Tf', verbose=True) % retrieve_num
         print(f'tramsforming into {result_pkl}')
         df = retriever.transform(topics)
         print(f'df columns {df.columns.tolist()}')
@@ -42,8 +40,9 @@ if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
 run = sys.argv[2:]
-modelname = "tctcolbert"
-index_path = f"{config.data_dir}/{modelname}-{config.dataset_name}-index.flex"
+modelname = "splade"
+index_path = f"{config.data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
+
 if __name__ == '__main__':
     if 'index' in run:
         create_index(index_path, config.dataset)

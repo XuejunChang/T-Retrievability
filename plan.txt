@@ -1,0 +1,12 @@
+1. add datasets:
+
+HotpotQA
+NQ
+Trec_news
+Covid-19
+Fever
+
+2. add RR Metric
+
+3. compare exposure fairness on synthetic queries
+

@@ -1,22 +1,32 @@
 import unittest
 
 import numpy as np
-
 import gini
+import fair_utils
 
 def calc(arr):
     print('-' * 10)
     print(arr)
-    oldest = gini.gini_oldest(arr)
-    print("gini_oldest:",oldest)
+    old11 = fair_utils.old_gini(arr,intv=11)
+    print("old_gini_interval_10",old11)
 
-    formal = gini.gini_formal(arr)
-    print("gini_formal:", formal)
+    old101 = fair_utils.old_gini(arr,intv=101)
+    print("old_gini_interval_100",old101)
 
-    # converted = gini.gini_alternative(arr)
-    # print("gini_converted:", converted)
+    old1001 = fair_utils.old_gini(arr,intv=1001)
+    print("old_gini_interval_1000",old1001)
+
+    basic_gini = fair_utils.raw_gini(arr)
+    print("basic_gini:", basic_gini)
+
+    fast_gini = fair_utils.curve_gini(arr)
+    print("fast_gini:", fast_gini)
+
+    arr = dict(enumerate(arr))
+    java_gini = gini.compute_gini(arr)
+    print("java_gini:", java_gini)
     #
-    # simplified = gini.gini_alternative_convt(arr)
+    # simplified = fair_utils.gini_alternative_convt(arr)
     # print("gini_simplified:",simplified)
     # print('-' * 10)
 
@@ -93,9 +103,9 @@ class TestStringMethods(unittest.TestCase):
         arr = np.append(arr, [1]).astype(int)
         calc(arr)
 
-    def test_g(self):
-        arr = np.random.randint(-200, 200, size=(101093,))
-        calc(arr)
+    # def test_g(self):
+    #     arr = np.random.randint(-200, 200, size=(101093,))
+    #     calc(arr)
 
 
 if __name__ == '__main__':
