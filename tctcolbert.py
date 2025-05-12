@@ -23,7 +23,8 @@ def retrieve(index_path, modelname, dataset_name, topics_name, topics, retrieve_
     result_pkl = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.pkl'
     if not os.path.exists(result_pkl):
         index = pyterrier_dr.FlexIndex(index_path)
-        retriever = model >> index.torch_retriever() % retrieve_num
+        # retriever = model >> index.torch_retriever() % retrieve_num
+        retriever = model >> index.np_retriever() % retrieve_num
         print(f'tramsforming into {result_pkl}')
         df = retriever.transform(topics)
         print(f'df columns {df.columns.tolist()}')
