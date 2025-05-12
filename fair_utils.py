@@ -84,12 +84,25 @@ def curve_gini(arr):
 #     print(m)
 #     df['nDCG@10'], df['AP(rel=2)'], df['RR'] = m[nDCG@10], m[AP(rel=2)], m[RR]
 #     return df
+def get_trec_qrels(df, qrels_res_path):
+    if  not os.path.exists(qrels_res_path):
+        print(f'saving into {qrels_res_path}')
+        result = pd.DataFrame()
+        result['query_id'] = df['qid']
+        result['Q0'] = 0
+        result['doc_id'] = df['docno']
+        result['relevance'] = df['label']
 
-def save_trec_res(result_pkl, run_name=None):
-    trec_res = f'{config.data_dir}/{Path(result_pkl).stem}.res'
-    if not os.path.exists(trec_res):
+        result.to_csv(qrels_res_path, sep=' ', index=False, header=False)
+        print(f'saved')
+
+    return qrels_res_path
+
+def save_trec_res(result_pkl,run_name, data_dir):
+    trec_res_path = f'{data_dir}/{Path(result_pkl).stem}.res'
+    if not os.path.exists(trec_res_path):
         df = pd.read_pickle(result_pkl).reset_index(drop=True)
-        print(f'saving into {trec_res}')
+        print(f'saving into {trec_res_path}')
         result = pd.DataFrame()
         result['query_id'] = df['qid']
         result['Q0'] = 'Q0'
@@ -98,17 +111,19 @@ def save_trec_res(result_pkl, run_name=None):
         result['score'] = df['score']
         result['run_name'] = run_name
 
-        result.to_csv(trec_res, sep=' ', index=False, header=False)
+        result.to_csv(trec_res_path, sep=' ', index=False, header=False)
         print(f'saved')
 
-    return trec_res
+    return trec_res_path
 
-def save_retrieved_docs_measures(result_pkl, trec_res):
-    result_measures = f'{config.data_dir}/{Path(result_pkl).stem}_measures.pkl'
+def save_retrieved_docs_measures(result_pkl, trec_res_path, data_dir):
+    result_measures = f'{data_dir}/{Path(result_pkl).stem}_measures.pkl'
     if not os.path.exists(result_measures):
         df = pd.read_pickle(result_pkl).reset_index(drop=True)
         print(f'calculating metrics')
-        metrics_dict = cal_metrics(config.trec_qrels, trec_res)
+        qrels_res_path = f'{data_dir}/qrels_dev.res'
+        trec_qrels_path = get_trec_qrels(config.qrels, qrels_res_path)
+        metrics_dict = cal_metrics(trec_qrels_path, trec_res_path)
         for items in metrics_dict.items():
             df[items[0]] = items[1]
 
@@ -116,7 +131,7 @@ def save_retrieved_docs_measures(result_pkl, trec_res):
         df.to_pickle(result_measures)
         print(f'done')
 
-def cal_metrics(qrels_file, res_file):
+def cal_metrics(trec_qrels_path, trec_res_path):
     # all_metrics = [
     #     "map", "set_map", "set_P", "set_recall", "set_F", "Rprec", "bpref", "recip_rank",
     #     "ndcg", "ndcg_cut.5", "ndcg_cut.10", "ndcg_cut.20",
@@ -134,10 +149,10 @@ def cal_metrics(qrels_file, res_file):
     for metric in metrics:
         args.append('-m')
         args.append(metric)
-    cmd = ["trec_eval"] + args + [qrels_file, res_file]
+    cmd = ["trec_eval"] + args + [trec_qrels_path, trec_res_path]
 
-    # cmd = ["trec_eval"] + [qrels_file, res_file]
-    # cmd = ["trec_eval"] + ["-q"] + [qrels_file, res_file]
+    # cmd = ["trec_eval"] + [trec_qrels_path, trec_res_path]
+    # cmd = ["trec_eval"] + ["-q"] + [trec_qrels_path, trec_res_path]
 
     print(cmd)
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -153,11 +168,11 @@ def cal_metrics(qrels_file, res_file):
 
 # model_name = sys.argv[1]
 if __name__ == '__main__':
-    qrels_file = '/nfs/datasets/cxj/exposure-fairness/v1/qrels_dev.res'
-    res_file = '/nfs/datasets/cxj/exposure-fairness/v1/bm25_tctcolbert_100.res'
-    # qrels_file = f'{config.home_data}/qrels_dev.res'
-    # res_file = f'{config.home_data}/{model_name}_100.res'
+    trec_qrels_path = '/nfs/datasets/cxj/exposure-fairness/v1/qrels_dev.res'
+    trec_res_path = '/nfs/datasets/cxj/exposure-fairness/v1/bm25_tctcolbert_100.res'
+    trec_qrels_path = f'{config.data_dir}/qrels_dev.res'
+    trec_res_path = f'{config.data_dir}/bm25_100.res'
 
-    result = cal_metrics(qrels_file, res_file)
+    result = cal_metrics(trec_qrels_path, trec_res_path)
 
 

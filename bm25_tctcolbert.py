@@ -45,5 +45,5 @@ if __name__ == '__main__':
         result_pkl = retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
 
         run_name=f'{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}'
-        trec_res = fair_utils.save_trec_res(result_pkl,run_name)
-        fair_utils.save_retrieved_docs_measures(result_pkl, trec_res)
+        trec_res_path = fair_utils.save_trec_res(result_pkl,run_name, data_dir)
+        fair_utils.save_retrieved_docs_measures(result_pkl, trec_res_path, data_dir)

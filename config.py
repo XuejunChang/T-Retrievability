@@ -4,18 +4,6 @@ if not pt.java.started():
 
 import os, pandas as pd
 
-def save_trec_qrels(df, save_file):
-    if not os.path.exists(save_file):
-        print(f'saving into {save_file}')
-        result = pd.DataFrame()
-        result['query_id'] = df['qid']
-        result['Q0'] = 0
-        result['doc_id'] = df['docno']
-        result['relevance'] = df['label']
-
-        result.to_csv(save_file, sep=' ', index=False, header=False)
-        print(f'saved')
-
 # prog_dir = '/mnt/primary/exposure-fairness'
 # data_dir = '/mnt/datasets/cxj/exposure-fairness'
 prog_dir = '/nfs/primary/exposure-fairness'
@@ -29,10 +17,7 @@ retrieve_num = 100
 dataset = pt.get_dataset(f'irds:{dataset_name}')
 dev = pt.get_dataset(f'irds:msmarco-passage/dev')
 topics = dev.get_topics()
-
 qrels = dev.get_qrels()
-trec_qrels = f'{data_dir}/qrels_dev.res'
-save_trec_qrels(qrels, trec_qrels)
 
 # dl19 = pt.get_dataset('irds:msmarco-passage/trec-dl-2019')
 # dl19_topics = dl19.get_topics()
