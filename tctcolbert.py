@@ -20,21 +20,21 @@ def create_index(index_path, dataset):
     return index_path
 
 def retrieve(index_path, modelname, dataset_name, topics_name, topics, retrieve_num, data_dir):
-    result_pkl = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.pkl'
-    if not os.path.exists(result_pkl):
+    result_csv = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.csv'
+    if not os.path.exists(result_csv):
         index = pyterrier_dr.FlexIndex(index_path)
         # retriever = model >> index.torch_retriever() % retrieve_num
         retriever = model >> index.np_retriever() % retrieve_num
-        print(f'tramsforming into {result_pkl}')
+        print(f'tramsforming into {result_csv}')
         df = retriever.transform(topics)
         print(f'df columns {df.columns.tolist()}')
         df = df[['qid','docid','docno','score','rank']]
 
-        print(f'saved into {result_pkl}')
-        df.to_pickle(result_pkl)
+        print(f'saved into {result_csv}')
+        df.to_csv(result_csv, index=False)
         print(f'done')
 
-    return result_pkl
+    return result_csv
 
 # order of args: [version] retrieve
 version = sys.argv[1]
@@ -50,10 +50,10 @@ if __name__ == '__main__':
         create_index(index_path, config.dataset)
 
     if 'retrieve' in run:
-        result_pkl = retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+        result_csv = retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
 
         run_name=f'{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}'
-        trec_res_path = fair_utils.save_trec_res(result_pkl,run_name, data_dir)
-        fair_utils.save_retrieved_docs_measures(result_pkl, trec_res_path, data_dir)
+        trec_res_path = fair_utils.save_trec_res(result_csv,run_name, data_dir)
+        fair_utils.save_retrieved_docs_measures(result_csv, trec_res_path, data_dir)
         
 

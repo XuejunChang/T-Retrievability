@@ -4,10 +4,10 @@ if not pt.java.started():
 
 import os, pandas as pd
 
-# prog_dir = '/mnt/primary/exposure-fairness'
-# data_dir = '/mnt/datasets/cxj/exposure-fairness'
-prog_dir = '/nfs/primary/exposure-fairness'
-data_dir = '/nfs/datasets/cxj/exposure-fairness'
+prog_dir = '/mnt/primary/exposure-fairness'
+data_dir = '/mnt/datasets/cxj/exposure-fairness'
+# prog_dir = '/nfs/primary/exposure-fairness'
+# data_dir = '/nfs/datasets/cxj/exposure-fairness'
 
 # bm25 bm25_monot5 splade tctcolbert bm25_tctcolbert
 

@@ -110,8 +110,8 @@ for modelname in run_model:
         end = time.time()
         print(f'{modelname}: total time of number of groups {num_groups}: {(end-start)/60} minutes')
 
-results_pkl = f'{data_dir}/results_2.pkl'
-print(f'saving into {results_pkl}')
-results_df.to_pickle(results_pkl)
+results_csv = f'{data_dir}/results_2.csv'
+print(f'saving into {results_csv}')
+results_df.to_pickle(results_csv)
 print('saved.')
 

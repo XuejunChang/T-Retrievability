@@ -98,10 +98,10 @@ def get_trec_qrels(df, qrels_res_path):
 
     return qrels_res_path
 
-def save_trec_res(result_pkl,run_name, data_dir):
-    trec_res_path = f'{data_dir}/{Path(result_pkl).stem}.res'
+def save_trec_res(result_csv,run_name, data_dir):
+    trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
     if not os.path.exists(trec_res_path):
-        df = pd.read_pickle(result_pkl).reset_index(drop=True)
+        df = pd.read_csv(result_csv, index_col=0).reset_index()
         print(f'saving into {trec_res_path}')
         result = pd.DataFrame()
         result['query_id'] = df['qid']
@@ -112,14 +112,14 @@ def save_trec_res(result_pkl,run_name, data_dir):
         result['run_name'] = run_name
 
         result.to_csv(trec_res_path, sep=' ', index=False, header=False)
-        print(f'saved')
+        print(f'done')
 
     return trec_res_path
 
-def save_retrieved_docs_measures(result_pkl, trec_res_path, data_dir):
-    result_measures = f'{data_dir}/{Path(result_pkl).stem}_measures.pkl'
-    if not os.path.exists(result_measures):
-        df = pd.read_pickle(result_pkl).reset_index(drop=True)
+def save_retrieved_docs_measures(result_csv, trec_res_path, data_dir):
+    result_measures_path = f'{data_dir}/{Path(result_csv).stem}_measures.csv'
+    if not os.path.exists(result_measures_path):
+        df = pd.read_csv(result_csv, index_col=0).reset_index()
         print(f'calculating metrics')
         qrels_res_path = f'{data_dir}/qrels_dev.res'
         trec_qrels_path = get_trec_qrels(config.qrels, qrels_res_path)
@@ -127,11 +127,13 @@ def save_retrieved_docs_measures(result_pkl, trec_res_path, data_dir):
         for items in metrics_dict.items():
             df[items[0]] = items[1]
 
-        print(f'saved into {result_measures}')
-        df.to_pickle(result_measures)
+        print(f'saving into {result_measures_path}')
+        df.to_csv(result_measures_path, index=False)
         print(f'done')
 
 def cal_metrics(trec_qrels_path, trec_res_path):
+    # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
+    
     # all_metrics = [
     #     "map", "set_map", "set_P", "set_recall", "set_F", "Rprec", "bpref", "recip_rank",
     #     "ndcg", "ndcg_cut.5", "ndcg_cut.10", "ndcg_cut.20",
