@@ -41,11 +41,14 @@ def calc_metrics(sum_doc_rscores):
     mean = statistics.mean(scores)
     std = statistics.stdev(scores)
 
+    print('calc group_gini')
+    group_gini = gini.compute_gini(sum_doc_rscores['r_score'].to_dict())
+    print('done')
+
     avg_rscore = sum_doc_rscores['r_score'].mean()
     min_rscore = sum_doc_rscores['r_score'].min()
     max_rscore = sum_doc_rscores['r_score'].max()
-    group_gini = gini.compute_gini(sum_doc_rscores['r_score'].to_dict())
-
+    
     return mean, std, group_gini, avg_rscore, min_rscore, max_rscore
 
 
@@ -60,7 +63,7 @@ run_model = sys.argv[3:]
 num_clusters = [500, 1000, 2000, 5000, 10000]
 topic = 'dev'
 for modelname in run_model:
-    agg_granularities = []
+    models_granularities = []
     for grp_granularity in num_clusters:
         print(f'evaluate {modelname} by {grp_granularity}')
         csv = f'{config.prog_dir}/clustered_dev_queries_by_{grp_granularity}.csv'
@@ -74,15 +77,15 @@ for modelname in run_model:
 
         if os.path.exists(rscore_csv):
             print(f'loading {rscore_csv}')
-            df = pd.read_pickle(rscore_csv)
+            df = pd.read_csv(rscore_csv, index_col=0).reset_index()
         else:
             result_csv = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}.csv'
-            df = pd.read_pickle(result_csv).reset_index()
-            print('calc r_score of each document of the retrieved list ...')
-            df['r_score'] = df['rank'].progress_apply(lambda x: 1 / np.log(x + 2))
+            df = pd.read_csv(result_csv, index_col=0).reset_index()
+            print('calc r_score of each document of the retrieved docs ...')
+            df['r_score'] = df['rank'].progress_apply(lambda x: 1.0 / np.log(x + 2))
             print(f'saving into {rscore_csv}')
-            df.to_pickle(rscore_csv)
-            print(f'saved')
+            df.to_csv(rscore_csv, index=False)
+            print(f'done')
 
         res = []
         for group_id, grouped_queries_df in grouped_df:
@@ -95,23 +98,18 @@ for modelname in run_model:
 
         print(f'Build granularity-wise df for {grp_granularity} for {modelname}')
         df_granularity_wise = pd.DataFrame(res, columns=['modelname', 'grp_granularity', 'group_id', 'mean', 'std',
-                                                         'group_gini',
-                                                         'avg_rscore', 'min_rscore', 'max_rscore'])
+                                                         'group_gini', 'avg_rscore', 'min_rscore', 'max_rscore'])
         ginis = df_granularity_wise['group_gini']
-        agg_granularities.append([modelname, grp_granularity, ginis.min(), ginis.mean(), ginis.max()])
+        models_granularities.append([modelname, grp_granularity, ginis.min(), ginis.mean(), ginis.max()])
 
-    print(f'Combine df for {modelname}')
-    result_csv = pd.DataFrame(agg_granularities,
-                              columns=['modelname', 'grp_granularity', 'min_gin', 'mean_gini', 'max_gin'])
-    result_csv_file = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_agg_granularities.csv'
-    print(f'saving into {result_csv_file}')
-    result_csv.to_pickle(result_csv_file)
+    print(f'add the statistics of the model {modelname} into result_csv')
+    result_csv = pd.DataFrame(models_granularities,
+                              columns=['modelname', 'grp_granularity', 'min_gini', 'mean_gini', 'max_gini'])
+    result_csv_path = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_models_granularities.csv'
+    print(f'saving into {result_csv_path}')
+    result_csv.to_csv(result_csv_path, index=False)
     print('done')
 
-    # run_name = f'{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_agg_granularities'
-    # print(f'saving into TREC res file by run_name {run_name}')
-    # fair_utils.save_trec_res(result_csv_file, run_name, data_dir)
-    # print('done')
 
 
 
