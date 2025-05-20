@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
 tqdm.pandas()
 
 pd.set_option('display.max_columns', None)
@@ -9,7 +8,6 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', 100)
 
 import pyterrier as pt
-
 if not pt.java.started():
     pt.java.init()
 
@@ -70,7 +68,3 @@ for modelname in run_model:
     print(f'saving into {result_csv_path}')
     results_coll_df.to_csv(result_csv_path, index=False)
     print('done')
-
-
-
-
