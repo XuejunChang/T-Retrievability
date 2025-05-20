@@ -1,5 +1,0 @@
-modelname,threshold,grps,min_gini,mean_gini,max_gini,nDCG@10,RR
-splade,0,2000,0.1641,0.2734,0.5526,,
-splade,30,2000,0.1645,0.2845,0.5862,,
-splade,60,2000,0.1677,0.3096,0.6615,,
-splade,90,2000,0.1677,0.3864,0.7402,,

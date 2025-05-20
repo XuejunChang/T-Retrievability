@@ -1,5 +1,0 @@
-modelname,threshold,grps,min_gini,mean_gini,max_gini,nDCG@10,RR
-bm25_monot5,0,2000,0.1688,0.2655,0.6919,,
-bm25_monot5,30,2000,0.1688,0.2734,0.6266,,
-bm25_monot5,60,2000,0.1685,0.293,0.667,,
-bm25_monot5,90,2000,0.1724,0.3498,0.7082,,

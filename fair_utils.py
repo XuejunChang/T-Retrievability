@@ -6,76 +6,6 @@ import subprocess
 import config
 from pathlib import Path
 
-def old_gini(v, intv=11):
-    v = np.array(v)
-    if np.all(v == 0):
-        return 0.0
-    bins = np.linspace(0., 100., intv)
-    total = float(np.sum(v))
-    yvals = [0]
-    for b in bins[1:]:
-        bin_vals = v[v <= np.percentile(v, b)]
-        bin_fraction = (np.sum(bin_vals) / total) * 100.0
-        yvals.append(bin_fraction)
-    # perfect equality area
-    pe_area = np.trapz(bins, x=bins)
-    # pe_area = np.trapezoid(bins, x=bins)
-    
-    # lorenz area
-    lorenz_area = np.trapz(yvals, x=bins)
-    # lorenz_area = np.trapezoid(yvals, x=bins)
-    gini_val = (pe_area - lorenz_area) / float(pe_area)
-    return gini_val
-    
-def raw_gini(arr):
-    # start = time.time()
-    arr = np.array(arr)
-    if np.all(arr == 0):
-        return 0.0
-    n = len(arr)
-    x_avg = np.mean(arr)
-    sum = 0.0
-    for i in range(n):
-        for j in range(n):
-            sum = sum + np.abs(arr[i]-arr[j])
-    denom = 2 * n * n * x_avg
-    # end = time.time()
-    # print(f'total time: {end-start} s, {(end-start)/60} min')
-    return sum/denom
-
-# def Gini(x):
-#     # Ensure the array is sorted
-#     sorted_x = np.sort(x)
-#     n = len(x)
-#     # Calculate the Lorenz curve cumulative values
-#     cumulative_x = np.cumsum(sorted_x, dtype=float)
-#     # Calculate the Gini coefficient using the Lorenz curve
-#     gini = (n + 1 - 2 * np.sum(cumulative_x) / cumulative_x[-1]) / n
-#     print(f'gini: {gini}')
-#     return gini
-
-# def Gini(arr):
-#     arr = np.abs(arr)
-#     sum_i = 0.0
-#     for x_i in arr:
-#         sum_j = 0.0
-#         for x_j in arr:
-#             sum_j = sum_j + np.abs(x_i-x_j)
-#         sum_i = sum_i + sum_j
-#     denom = 2 * len(arr) + np.sum(arr)
-#     return sum_i/denom
-
-def curve_gini(arr):
-    arr = np.array(arr)
-    if np.all(arr == 0):
-        return 0.0
-    sorted_arr = np.sort(arr)
-    cumarr = np.cumsum(sorted_arr, dtype=float)
-    sumarr = cumarr[-1]
-    n = len(arr)
-    gini = (n + 1 - 2 * np.sum(cumarr) / sumarr) / n
-    return gini
-
 # def calc_metrics(df,qrels):
 #     df['query_id'] = df['qid'].astype(str)
 #     df['doc_id'] = df['docno'].astype(str)
@@ -84,6 +14,15 @@ def curve_gini(arr):
 #     print(m)
 #     df['nDCG@10'], df['AP(rel=2)'], df['RR'] = m[nDCG@10], m[AP(rel=2)], m[RR]
 #     return df
+
+def get_trec_queries(df, query_res_path):
+    if  not os.path.exists(query_res_path):
+        print(f'saving into {query_res_path}')
+        df.to_csv(query_res_path, sep=' ', index=False, header=False)
+        print(f'saved')
+
+    return query_res_path
+    
 def get_trec_qrels(df, qrels_res_path):
     if  not os.path.exists(qrels_res_path):
         print(f'saving into {qrels_res_path}')
