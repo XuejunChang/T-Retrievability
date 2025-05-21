@@ -55,6 +55,26 @@ def save_trec_res(result_csv,run_name, data_dir):
 
     return trec_res_path
 
+
+def save_topical_trec_res(result_csv,run_name, data_dir):
+    trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
+    if not os.path.exists(trec_res_path):
+        df = pd.read_csv(result_csv, index_col=0).reset_index()
+        print(f'saving into {trec_res_path}')
+        result = pd.DataFrame()
+        result['query_id'] = df['qid']
+        result['Q0'] = 'Q0'
+        result['doc_id'] = df['docid']
+        result['rank'] = df['rank']
+        result['score'] = df['score']
+        result['cluster'] = df['cluster']
+        result['run_name'] = run_name
+
+        result.to_csv(trec_res_path, sep=' ', index=False, header=False)
+        print(f'done')
+
+    return trec_res_path
+
 def save_retrieved_docs_measures(result_csv, trec_res_path, data_dir):
     result_measures_path = f'{data_dir}/{Path(result_csv).stem}_measures.csv'
     if not os.path.exists(result_measures_path):

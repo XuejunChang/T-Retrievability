@@ -9,8 +9,8 @@ data_dir = '/mnt/datasets/cxj/exposure-fairness'
 # prog_dir = '/nfs/primary/exposure-fairness'
 # data_dir = '/nfs/datasets/cxj/exposure-fairness'
 
-models = ['bm25', 'bm25_monot5', 'splade', 'tctcolbert', 'bm25_tctcolbert']
-# bm25 bm25_monot5 splade tctcolbert bm25_tctcolbert
+models = ['bm25', 'splade', 'tctcolbert', 'bm25_tctcolbert', 'bm25_monot5']
+# bm25 splade tctcolbert bm25_tctcolbert bm25_monot5
 
 dataset_name = 'msmarco-passage'
 topics_name = 'dev'
