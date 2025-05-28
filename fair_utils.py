@@ -1,10 +1,13 @@
+from wsgiref.util import request_uri
+
 import numpy as np
 from ir_measures import *
 import pandas as pd
-import os,time,sys
+import os, time, sys
 import subprocess
 import config
 from pathlib import Path
+
 
 # def calc_metrics(df,qrels):
 #     df['query_id'] = df['qid'].astype(str)
@@ -16,15 +19,17 @@ from pathlib import Path
 #     return df
 
 def get_trec_queries(df, query_res_path):
-    if  not os.path.exists(query_res_path):
+    if not os.path.exists(query_res_path):
         print(f'saving into {query_res_path}')
         df.to_csv(query_res_path, sep=' ', index=False, header=False)
         print(f'saved')
+    else:
+        print(f'found {query_res_path}')
 
     return query_res_path
-    
+
 def get_trec_qrels(df, qrels_res_path):
-    if  not os.path.exists(qrels_res_path):
+    if not os.path.exists(qrels_res_path):
         print(f'saving into {qrels_res_path}')
         result = pd.DataFrame()
         result['query_id'] = df['qid']
@@ -34,44 +39,53 @@ def get_trec_qrels(df, qrels_res_path):
 
         result.to_csv(qrels_res_path, sep=' ', index=False, header=False)
         print(f'saved')
+    else:
+        print(f'found {qrels_res_path}')
 
     return qrels_res_path
 
-def save_trec_res(result_csv,run_name, data_dir):
-    trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
-    if not os.path.exists(trec_res_path):
-        df = pd.read_csv(result_csv, index_col=0).reset_index()
-        print(f'saving into {trec_res_path}')
-        result = pd.DataFrame()
-        result['query_id'] = df['qid']
-        result['Q0'] = 'Q0'
-        result['doc_id'] = df['docid']
-        result['rank'] = df['rank']
-        result['score'] = df['score']
-        result['run_name'] = run_name
 
-        result.to_csv(trec_res_path, sep=' ', index=False, header=False)
-        print(f'done')
+def save_trec_res(result_csv, run_name, data_dir):
+    trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
+    if os.path.exists(trec_res_path):
+        os.remove(trec_res_path)
+        print(f'removed {trec_res_path}')
+
+    df = pd.read_csv(result_csv, index_col=0).reset_index()
+    print(f'saving into {trec_res_path}')
+    result = pd.DataFrame()
+    result['query_id'] = df['qid']
+    result['Q0'] = 'Q0'
+    result['doc_id'] = df['docid']
+    result['rank'] = df['rank']
+    result['score'] = df['score']
+    result['run_name'] = run_name
+
+    result.to_csv(trec_res_path, sep=' ', index=False, header=False)
+    print(f'done')
 
     return trec_res_path
 
 
-def save_topical_trec_res(result_csv,run_name, data_dir):
+def save_topical_trec_res(result_csv, run_name, data_dir):
     trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
-    if not os.path.exists(trec_res_path):
-        df = pd.read_csv(result_csv, index_col=0).reset_index()
-        print(f'saving into {trec_res_path}')
-        result = pd.DataFrame()
-        result['query_id'] = df['qid']
-        result['Q0'] = 'Q0'
-        result['doc_id'] = df['docid']
-        result['rank'] = df['rank']
-        result['score'] = df['score']
-        result['cluster'] = df['cluster']
-        result['run_name'] = run_name
+    if os.path.exists(trec_res_path):
+        os.remove(trec_res_path)
+        print(f'removed {trec_res_path}')
 
-        result.to_csv(trec_res_path, sep=' ', index=False, header=False)
-        print(f'done')
+    df = pd.read_csv(result_csv, index_col=0).reset_index()
+    print(f'saving into {trec_res_path}')
+    result = pd.DataFrame()
+    result['query_id'] = df['qid']
+    result['Q0'] = 'Q0'
+    result['doc_id'] = df['docid']
+    result['rank'] = df['rank']
+    result['score'] = df['score']
+    result['cluster'] = df['cluster']
+    result['run_name'] = run_name
+
+    result.to_csv(trec_res_path, sep=' ', index=False, header=False)
+    print(f'done')
 
     return trec_res_path
 
@@ -89,10 +103,14 @@ def save_retrieved_docs_measures(result_csv, trec_res_path, data_dir):
         print(f'saving into {result_measures_path}')
         df.to_csv(result_measures_path, index=False)
         print(f'done')
+    else:
+        print(f'found {result_measures_path}')
+
+    return result_measures_path
 
 def cal_metrics(trec_qrels_path, trec_res_path):
     # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
-    
+
     # all_metrics = [
     #     "map", "set_map", "set_P", "set_recall", "set_F", "Rprec", "bpref", "recip_rank",
     #     "ndcg", "ndcg_cut.5", "ndcg_cut.10", "ndcg_cut.20",

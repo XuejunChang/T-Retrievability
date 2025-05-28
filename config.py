@@ -25,3 +25,5 @@ qrels = dev.get_qrels()
 # dl20 = pt.get_dataset('irds:msmarco-passage/trec-dl-2020')
 # dl20_topics = dl20.get_topics()
 # dl1920_topics = pd.concat([dl19_topics, dl20_topics], ignore_index=True)
+
+num_clusters = [500, 1000, 2000, 5000, 10000]

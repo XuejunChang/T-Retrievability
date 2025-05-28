@@ -34,7 +34,7 @@ os.makedirs(data_dir, exist_ok=True)
 delcache = True if sys.argv[2] == 'True' else False
 run_model = sys.argv[3:]
 
-num_clusters = [500, 1000, 2000, 5000, 10000]
+num_clusters = config.num_clusters
 topic = 'dev'
 models_coll_gini = {}
 for modelname in run_model:
