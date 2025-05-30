@@ -8,16 +8,6 @@ import subprocess
 import config
 from pathlib import Path
 
-
-# def calc_metrics(df,qrels):
-#     df['query_id'] = df['qid'].astype(str)
-#     df['doc_id'] = df['docno'].astype(str)
-#     m = calc_aggregate([nDCG@10, AP(rel=2), RR], qrels, df)
-#     # print(f"nDCG@10: {m[nDCG @ 10]}, AP: {m[AP]}, RR: {m[RR]}")
-#     print(m)
-#     df['nDCG@10'], df['AP(rel=2)'], df['RR'] = m[nDCG@10], m[AP(rel=2)], m[RR]
-#     return df
-
 def get_trec_queries(df, query_res_path):
     if not os.path.exists(query_res_path):
         print(f'saving into {query_res_path}')
@@ -29,7 +19,9 @@ def get_trec_queries(df, query_res_path):
     return query_res_path
 
 def get_trec_qrels(df, qrels_res_path):
-    if not os.path.exists(qrels_res_path):
+    if os.path.exists(qrels_res_path):
+        print(f'found {qrels_res_path}')
+    else:
         print(f'saving into {qrels_res_path}')
         result = pd.DataFrame()
         result['query_id'] = df['qid']
@@ -39,20 +31,14 @@ def get_trec_qrels(df, qrels_res_path):
 
         result.to_csv(qrels_res_path, sep=' ', index=False, header=False)
         print(f'saved')
-    else:
-        print(f'found {qrels_res_path}')
 
     return qrels_res_path
 
+def save_trec_res(df, result_res_file, run_name):
+    if os.path.exists(result_res_file):
+        os.remove(result_res_file)
+        print(f'removed {result_res_file}')
 
-def save_trec_res(result_csv, run_name, data_dir):
-    trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
-    if os.path.exists(trec_res_path):
-        os.remove(trec_res_path)
-        print(f'removed {trec_res_path}')
-
-    df = pd.read_csv(result_csv, index_col=0).reset_index()
-    print(f'saving into {trec_res_path}')
     result = pd.DataFrame()
     result['query_id'] = df['qid']
     result['Q0'] = 'Q0'
@@ -61,56 +47,12 @@ def save_trec_res(result_csv, run_name, data_dir):
     result['score'] = df['score']
     result['run_name'] = run_name
 
-    result.to_csv(trec_res_path, sep=' ', index=False, header=False)
+    print(f'saving into {result_res_file}')
+    result.to_csv(result_res_file, sep=' ', index=False, header=False)
     print(f'done')
 
-    return trec_res_path
-
-
-def save_topical_trec_res(result_csv, run_name, data_dir):
-    trec_res_path = f'{data_dir}/{Path(result_csv).stem}.res'
-    if os.path.exists(trec_res_path):
-        os.remove(trec_res_path)
-        print(f'removed {trec_res_path}')
-
-    df = pd.read_csv(result_csv, index_col=0).reset_index()
-    print(f'saving into {trec_res_path}')
-    result = pd.DataFrame()
-    result['query_id'] = df['qid']
-    result['Q0'] = 'Q0'
-    result['doc_id'] = df['docid']
-    result['rank'] = df['rank']
-    result['score'] = df['score']
-    result['cluster'] = df['cluster']
-    result['run_name'] = run_name
-
-    result.to_csv(trec_res_path, sep=' ', index=False, header=False)
-    print(f'done')
-
-    return trec_res_path
-
-def save_retrieved_docs_measures(result_csv, trec_res_path, data_dir):
-    result_measures_path = f'{data_dir}/{Path(result_csv).stem}_measures.csv'
-    if not os.path.exists(result_measures_path):
-        df = pd.read_csv(result_csv, index_col=0).reset_index()
-        print(f'calculating metrics')
-        qrels_res_path = f'{data_dir}/qrels_dev.res'
-        trec_qrels_path = get_trec_qrels(config.qrels, qrels_res_path)
-        metrics_dict = cal_metrics(trec_qrels_path, trec_res_path)
-        for items in metrics_dict.items():
-            df[items[0]] = items[1]
-
-        print(f'saving into {result_measures_path}')
-        df.to_csv(result_measures_path, index=False)
-        print(f'done')
-    else:
-        print(f'found {result_measures_path}')
-
-    return result_measures_path
-
-def cal_metrics(trec_qrels_path, trec_res_path):
+def cal_metrics(qrels_path, docs_path):
     # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
-
     # all_metrics = [
     #     "map", "set_map", "set_P", "set_recall", "set_F", "Rprec", "bpref", "recip_rank",
     #     "ndcg", "ndcg_cut.5", "ndcg_cut.10", "ndcg_cut.20",
@@ -128,14 +70,9 @@ def cal_metrics(trec_qrels_path, trec_res_path):
     for metric in metrics:
         args.append('-m')
         args.append(metric)
-    cmd = ["trec_eval"] + args + [trec_qrels_path, trec_res_path]
-
-    # cmd = ["trec_eval"] + [trec_qrels_path, trec_res_path]
-    # cmd = ["trec_eval"] + ["-q"] + [trec_qrels_path, trec_res_path]
-
+    cmd = ["trec_eval"] + args + [qrels_path, docs_path]
     print(cmd)
     result = subprocess.run(cmd, capture_output=True, text=True)
-
     metric_dict = {}
     for line in result.stdout.splitlines():
         arr = line.split()
@@ -144,14 +81,11 @@ def cal_metrics(trec_qrels_path, trec_res_path):
     print(metric_dict)
     return metric_dict
 
-
 # model_name = sys.argv[1]
 if __name__ == '__main__':
-    trec_qrels_path = '/nfs/datasets/cxj/exposure-fairness/v1/qrels_dev.res'
-    trec_res_path = '/nfs/datasets/cxj/exposure-fairness/v1/bm25_tctcolbert_100.res'
-    trec_qrels_path = f'{config.data_dir}/qrels_dev.res'
-    trec_res_path = f'{config.data_dir}/bm25_100.res'
+    qrels_path = '/nfs/datasets/cxj/exposure-fairness/v1/qrels_dev.res'
+    docs_path = '/nfs/datasets/cxj/exposure-fairness/v1/bm25_tctcolbert_100.res'
+    qrels_path = f'{config.data_dir}/qrels_dev.res'
+    docs_path = f'{config.data_dir}/bm25_100.res'
 
-    result = cal_metrics(trec_qrels_path, trec_res_path)
-
-
+    result = cal_metrics(qrels_path, docs_path)
