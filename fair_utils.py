@@ -51,8 +51,7 @@ def save_trec_res(df, res_file_path, run_name):
     result.to_csv(res_file_path, sep=' ', index=False, header=False)
     print(f'done')
 
-def convert_res2df(res_file):
-        res_file_path = f'{config.data_dir}/{res_file}'
+def convert_res2df(res_file_path):
         print(f'converting {res_file_path} into a dataframe')
         df = pd.read_csv(res_file_path,sep=r"\s+", names=["qid", "Q0", "docid", "rank", "score", "run"], dtype={"qid": str, "docid": str})
         df['docno'] = df['docid']
@@ -60,9 +59,7 @@ def convert_res2df(res_file):
         print('done')
         return df
     
-def cal_metrics(qrels_file, docs_file):
-    qrels_path = f'{config.data_dir}/{qrels_file}'
-    docs_path = f'{config.data_dir}/{docs_file}'
+def cal_metrics(qrels_path, docs_path):
     # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
     # all_metrics = [
     #     "map", "set_map", "set_P", "set_recall", "set_F", "Rprec", "bpref", "recip_rank",
