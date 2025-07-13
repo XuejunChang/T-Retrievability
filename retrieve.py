@@ -7,8 +7,6 @@ if not pt.java.started():
 import os, sys, pandas as pd
 import fair_utils
 import config
-import pyt_splade
-import tctcolbert
 import pyterrier_dr
 from pyterrier_t5 import MonoT5ReRanker
 
@@ -18,27 +16,12 @@ def bm25_retrieve(index_path, modelname, dataset_name, topics_name, topics, retr
         print(f'found {result_res_file}')
     else:
         retriever = pt.terrier.Retriever(index_path, wmodel='BM25', verbose=True) % retrieve_num
-        print(f'tramsforming into dataframe')
+        print(f'tramsforming into {result_res_file}')
         df = retriever.transform(topics)
         print(f'df columns {df.columns.tolist()}')
-        df = df[['qid','docid','docno','score','rank','query']]
-        run_name = f'{modelname}_{dataset_name}_{topics_name}_{retrieve_num}'
-        fair_utils.save_trec_res(df, result_res_file, run_name)
-
-    return result_res_file
-
-def splade_retrieve(index_path, modelname, dataset_name, topics_name, topics, retrieve_num, data_dir):
-    result_res_file = f'{data_dir}/{modelname}_{dataset_name}_{topics_name}_{retrieve_num}.res'
-    if os.path.exists(result_res_file):
-        print(f'found {result_res_file}')
-    else:
-        model = pyt_splade.Splade()
-        retriever = model.query_encoder() >> pt.terrier.Retriever(index_path, wmodel='Tf', verbose=True) % retrieve_num
-        print(f'tramsforming into dataframe')
-        df = retriever.transform(topics)
-        print(f'df columns {df.columns.tolist()}')
-        df = df[['qid','docid','docno','score','rank']]
-
+        df = df[['qid','docid','docno','rank','score','query']]
+        df.to_csv(f'{os.path.splitext(result_res_file)[0]}.csv', index=False)
+        
         run_name = f'{modelname}_{dataset_name}_{topics_name}_{retrieve_num}'
         fair_utils.save_trec_res(df, result_res_file, run_name)
 
@@ -52,10 +35,11 @@ def tctcolbert_retrieve(index_path, modelname, dataset_name, topics_name, topics
         index = pyterrier_dr.FlexIndex(index_path)
         model = pyterrier_dr.TctColBert('castorini/tct_colbert-v2-hnp-msmarco', batch_size=16, verbose=True)
         retriever = model >> index.np_retriever() % retrieve_num
-        print(f'tramsforming into dataframe')
+        print(f'tramsforming into {result_res_file}')
         df = retriever.transform(topics)
         print(f'df columns {df.columns.tolist()}')
-        df = df[['qid','docid','docno','score','rank']]
+        df = df[['qid', 'docid', 'docno','rank', 'score']]
+        df.to_csv(f'{os.path.splitext(result_res_file)[0]}.csv', index=False)
 
         run_name = f'{modelname}_{dataset_name}_{topics_name}_{retrieve_num}'
         fair_utils.save_trec_res(df, result_res_file, run_name)
@@ -67,16 +51,16 @@ def bm25_tctcolbert_retrieve(modelname, dataset_name, topics_name, topics, retri
     if os.path.exists(result_res_file):
         print(f'found {result_res_file}')
     else:
-        bm25_csv = bm25_retrieve(None, "bm25", dataset_name, topics_name, topics, retrieve_num, data_dir)
-        bm25_df = pd.read_csv(bm25_csv,index_col=0).reset_index()
-        bm25_df[['qid', 'docno']] = bm25_df[['qid', 'docno']].astype(str)
+        bm25_res = bm25_retrieve(None, "bm25", dataset_name, topics_name, topics, retrieve_num, data_dir)
+        bm25_df = fair_utils.convert_res2df(bm25_res)
+        model = pyterrier_dr.TctColBert('castorini/tct_colbert-v2-hnp-msmarco', batch_size=16, verbose=True)
+        pipeline = pt.text.get_text(config.dataset, 'text', verbose=True) >> model
 
-        dataset = pt.get_dataset(f'irds:{dataset_name}')
-        pipeline = pt.text.get_text(dataset, 'text', verbose=True) >> tctcolbert.model
-        print(f'tramsforming into dataframe')
+        print(f'tramsforming into {result_res_file}')
         df = pipeline.transform(bm25_df)
         print(f'df columns {df.columns.tolist()}')
-        df = df[['qid', 'docid', 'docno', 'score', 'rank']]
+        df = df[['qid', 'docid', 'docno','rank', 'score']]
+        df.to_csv(f'{os.path.splitext(result_res_file)[0]}.csv', index=False)
 
         run_name = f'{modelname}_{dataset_name}_{topics_name}_{retrieve_num}'
         fair_utils.save_trec_res(df, result_res_file, run_name)
@@ -88,46 +72,36 @@ def bm25_monot5_retrieve(modelname, dataset_name, topics_name, topics, retrieve_
     if os.path.exists(result_res_file):
         print(f'found {result_res_file}')
     else:
-        bm25_csv = bm25_retrieve(None, "bm25", dataset_name, topics_name, topics, retrieve_num, data_dir)
-        bm25_df = pd.read_csv(bm25_csv,index_col=0).reset_index()
-        bm25_df[['qid', 'docno']] = bm25_df[['qid', 'docno']].astype(str)
-        dataset = pt.get_dataset(f'irds:{dataset_name}')
-        monot5 = pt.text.get_text(dataset, 'text', verbose=True) >> MonoT5ReRanker(batch_size=16)
+        bm25_res = bm25_retrieve(None, "bm25", dataset_name, topics_name, topics, retrieve_num, data_dir)
+        bm25_df = fair_utils.convert_res2df(bm25_res)
+        monot5 = pt.text.get_text(config.dataset, 'text', verbose=True) >> MonoT5ReRanker(batch_size=16)
 
-        print(f'tramsforming into dataframe')
+        print(f'tramsforming into {result_res_file}')
         df = monot5.transform(bm25_df)
         print(f'df columns {df.columns.tolist()}')
-        df = df[['qid', 'docid', 'docno', 'score', 'rank']]
+        df = df[['qid', 'docid', 'docno','rank', 'score']]
+        df.to_csv(f'{os.path.splitext(result_res_file)[0]}.csv', index=False)
 
         run_name = f'{modelname}_{dataset_name}_{topics_name}_{retrieve_num}'
         fair_utils.save_trec_res(df, result_res_file, run_name)
 
     return result_res_file
 
-# order of args: [version] retrieve
-version = sys.argv[1]
-data_dir = f'{config.data_dir}/{version}'
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
+modelname = sys.argv[1]
 
-modelname = sys.argv[2]
-
+# nohup python -u retrieve.py v1 bm25 > ./logbm25rtr200 2>&1 &
 if __name__ == '__main__':
     if modelname == 'bm25':
-        index_path = f"{data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
-        result_res_file = bm25_retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
-
-    if modelname == 'splade':
-        index_path = f"{data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
-        result_res_file = splade_retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+        index_path = f"{config.index_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
+        result_res_file = bm25_retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, config.data_dir)
 
     if modelname == 'tctcolbert':
-        index_path = f"{data_dir}/{modelname}-{config.dataset_name}-index.flex"
-        result_res_file = tctcolbert_retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
-
+        index_path = f"{config.index_dir}/{modelname}-{config.dataset_name}-index.flex"
+        result_res_file = tctcolbert_retrieve(index_path, modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, config.data_dir)
+    
     if modelname == 'bm25_tctcolbert':
-        result_res_file = bm25_tctcolbert_retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+        result_res_file = bm25_tctcolbert_retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, config.data_dir)
 
     if modelname == 'bm25_monot5':
-        result_res_file = bm25_monot5_retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, data_dir)
+        result_res_file = bm25_monot5_retrieve(modelname, config.dataset_name, config.topics_name, config.topics, config.retrieve_num, config.data_dir)
 

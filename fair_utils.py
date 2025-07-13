@@ -22,22 +22,22 @@ def get_trec_qrels(df, qrels_res_path):
     if os.path.exists(qrels_res_path):
         print(f'found {qrels_res_path}')
     else:
-        print(f'saving into {qrels_res_path}')
         result = pd.DataFrame()
         result['query_id'] = df['qid']
         result['Q0'] = 0
-        result['doc_id'] = df['docno']
+        result['doc_id'] = df['docid']
         result['relevance'] = df['label']
-
+        
+        print(f'saving into {qrels_res_path}')
         result.to_csv(qrels_res_path, sep=' ', index=False, header=False)
         print(f'saved')
 
     return qrels_res_path
 
-def save_trec_res(df, result_res_file, run_name):
-    if os.path.exists(result_res_file):
-        os.remove(result_res_file)
-        print(f'removed {result_res_file}')
+def save_trec_res(df, res_file_path, run_name):
+    if os.path.exists(res_file_path):
+        os.remove(res_file_path)
+        print(f'removed {res_file_path}')
 
     result = pd.DataFrame()
     result['query_id'] = df['qid']
@@ -47,11 +47,22 @@ def save_trec_res(df, result_res_file, run_name):
     result['score'] = df['score']
     result['run_name'] = run_name
 
-    print(f'saving into {result_res_file}')
-    result.to_csv(result_res_file, sep=' ', index=False, header=False)
+    print(f'saving into {res_file_path}')
+    result.to_csv(res_file_path, sep=' ', index=False, header=False)
     print(f'done')
 
-def cal_metrics(qrels_path, docs_path):
+def convert_res2df(res_file):
+        res_file_path = f'{config.data_dir}/{res_file}'
+        print(f'converting {res_file_path} into a dataframe')
+        df = pd.read_csv(res_file_path,sep=r"\s+", names=["qid", "Q0", "docid", "rank", "score", "run"], dtype={"qid": str, "docid": str})
+        df['docno'] = df['docid']
+        df = df.merge(config.topics, how='left', on='qid')
+        print('done')
+        return df
+    
+def cal_metrics(qrels_file, docs_file):
+    qrels_path = f'{config.data_dir}/{qrels_file}'
+    docs_path = f'{config.data_dir}/{docs_file}'
     # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
     # all_metrics = [
     #     "map", "set_map", "set_P", "set_recall", "set_F", "Rprec", "bpref", "recip_rank",

@@ -23,30 +23,6 @@ import gini
 import config
 import argparse
 
-
-# def sum_doc_rscores_each_group(df, grouped_queries_df):
-#     print('groupby docno ...')
-#     qids_to_keep = grouped_queries_df['qid'].to_list()
-#     mask = np.logical_or.reduce([df["qid"] == val for val in qids_to_keep])
-#     df = df[mask]
-
-#     sum_doc_rscores = df.groupby("docno")[['r_score']].sum().reset_index()
-#     return sum_doc_rscores
-
-
-# def calc_metrics(sum_doc_rscores):
-#     print('calc metrics')
-#     scores = sum_doc_rscores['r_score'].to_list()
-#     mean = statistics.mean(scores)
-#     std = statistics.stdev(scores)
-
-#     avg_rscore = sum_doc_rscores['r_score'].mean()
-#     min_rscore = sum_doc_rscores['r_score'].min()
-#     max_rscore = sum_doc_rscores['r_score'].max()
-
-#     return mean, std, group_gini, avg_rscore, min_rscore, max_rscore
-
-# one-pass computation of retrievability scores for the retrieved documents
 def cacl_res_rscore(run_model, data_dir):
     for modelname in run_model:
         print(f'calc retrievability score for {modelname}')
@@ -63,6 +39,24 @@ def cacl_res_rscore(run_model, data_dir):
             print(f'found {rscore_csv}')
 
 def add_clusterid_to_res_df(num_clusters, run_model, data_dir, km=None):
+    for granu in num_clusters:
+        query_csv_path = f'{config.prog_dir}/grouped_queries/clustered_dev_queries_by_{granu}_{km}.csv'
+        cluster_q_df = pd.read_csv(query_csv_path, index_col=0).reset_index()
+        for modelname in run_model:
+            print(f'add_clusterid_to_res_df {granu} --> {modelname}')
+            result_csv_path = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_rscore.csv'
+            res_df = pd.read_csv(result_csv_path, index_col=0).reset_index()
+
+            merged_df = res_df.merge(cluster_q_df, on='qid', how='left')
+            merged_file_path = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_{granu}_{km}.csv'
+            if os.path.exists(merged_file_path):
+                os.remove(merged_file_path)
+                print(f'{merged_file_path} removed')
+            print(f'saving {merged_file_path}')
+            merged_df.to_csv(merged_file_path, index=False)
+            print('done')
+
+def query_clusterid_to_res_df(num_clusters, run_model, data_dir, km=None):
     for granu in num_clusters:
         query_csv_path = f'{config.prog_dir}/grouped_queries/clustered_dev_queries_by_{granu}_{km}.csv'
         cluster_q_df = pd.read_csv(query_csv_path, index_col=0).reset_index()
