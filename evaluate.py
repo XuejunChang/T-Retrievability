@@ -84,39 +84,47 @@ def evaluate_metrics(qrels_res, res_file_path):
 cut_off = 20
 batch_size = 32
 
-run = sys.argv[1]
-if len(sys.argv) > 2:
-    res_file = sys.argv[2] # e.g., bm25_msmarco-passage_dev_200_diver_df.res
+retr_num = sys.argv[1]
+run = sys.argv[2:]
 
 if __name__ == '__main__':
-    if run == 'diversify':
+    if 'diversify' in run:
         model = SentenceTransformer("BAAI/bge-base-en-v1.5")
-        res_file_path = f'{config.data_dir}/{res_file}'
-        trec_df = encode_trec_res(res_file_path)
-        for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
-            diversify(trec_df, res_file, lbda)
+        for modelname in config.models:
+            res_file = f'{modelname}_msmarco-passage_dev_{retr_num}.res'
+            res_file_path = f'{config.data_dir}/{res_file}'
+            trec_df = encode_trec_res(res_file_path)
+            for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
+                diversify(trec_df, res_file_path, lbda)
 
-        trec_csv_doc_vec = f'{config.data_dir}/{os.path.splitext(res_file)[0]}_doc_vec.pkl'
-        print(f'saving into {trec_csv_doc_vec}')
-        trec_df.to_pickle(trec_csv_doc_vec)
-        print('done')
+            trec_csv_doc_vec = f'{os.path.splitext(res_file_path)[0]}_doc_vec.pkl'
+            print(f'saving into {trec_csv_doc_vec}')
+            trec_df.to_pickle(trec_csv_doc_vec)
+            print('saved')
 
-    if run == 'cut_diversified':
-        for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
-            res_file_path = f'{config.data_dir}/{os.path.splitext(res_file)[0]}_lbda{lbda}.res'
+    if 'cut_diversified' in run:
+        for modelname in config.models:
+            res_file = f'{modelname}_msmarco-passage_dev_{retr_num}.res'
+            for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
+                res_file = f'{os.path.splitext(res_file)[0]}_lbda{lbda}.res'
+                res_file_path = f'{config.data_dir}/{res_file}'
+                cut_df(res_file_path, cut_off)
+
+    if 'cut_df' in run:
+        for modelname in config.models:
+            res_file = f'{modelname}_msmarco-passage_dev_{retr_num}.res'
+            print(f'cutting {res_file} into {cut_off}')
+            res_file_path = f'{config.data_dir}/{res_file}'
             cut_df(res_file_path, cut_off)
 
-    if run == 'cut_df':
-        res_file_path = f'{config.data_dir}/{res_file}'
-        cut_df(res_file_path, cut_off)
-
-    if run == 'evaluate_collection':
+    if 'evaluate_coll_lambda' in run:
         res_list = []
         qrels_res = f'{config.data_dir}/qrels_dev.res'
         for modelname in config.models:
+            res_file = f'{modelname}_msmarco-passage_dev_200.res'
             for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
-                res_file = f'{modelname}_msmarco-passage_dev_200.res'
-                res_file_path = f'{config.data_dir}/{os.path.splitext(res_file)[0]}_diver_df_lbda{lbda}_cut{cut_off}.res'
+                res_file = f'{os.path.splitext(res_file)[0]}_diver_df_lbda{lbda}_cut{cut_off}.res'
+                res_file_path = f'{config.data_dir}/{res_file}'
                 coll_gini = evaluate_coll_gini(res_file_path)
 
                 result = evaluate_metrics(qrels_res, res_file_path)
@@ -125,6 +133,26 @@ if __name__ == '__main__':
         result_df = pd.DataFrame(res_list, columns=['modelname', 'Lambda', 'cut_off', 'gini', 'nDCG@10', 'map'])
         result_csv = f'{config.data_dir}/all_models_gini_ndcg_lbda{lbda}_cut{cut_off}.csv'
         result_df.to_csv(result_csv, index=False)
+
+    if 'evaluate_coll_cutted_res' in run:
+        res_list = []
+        qrels_res = f'{config.data_dir}/qrels_dev.res'
+        for modelname in config.models:
+            res_file = f'{modelname}_msmarco-passage_dev_{retr_num}.res'
+            print(f'evaluating {res_file}')
+            res_file_path = f'{config.data_dir}/{res_file}'
+            cutted_csv_path = f'{os.path.splitext(res_file_path)[0]}_cut{cut_off}.res'
+            coll_gini = evaluate_coll_gini(cutted_csv_path)
+
+            result = evaluate_metrics(qrels_res, cutted_csv_path)
+            modelname = os.path.splitext(res_file)[0].split('_')[0]
+            res_list.append([modelname, cut_off, f"{coll_gini:.4f}", f"{result['ndcg_cut_10']:.4f}",f"{result['map']:.4f}"])
+
+        result_df = pd.DataFrame(res_list, columns=['modelname', 'cut_off', 'gini', 'nDCG@10', 'map'])
+        result_csv = f'{config.data_dir}/all_models_gini_ndcg_map_cut{cut_off}_from_{retr_num}.csv'
+        print(f'saving into {result_csv}')
+        result_df.to_csv(result_csv, index=False)
+        print('saved')
 
 
 
