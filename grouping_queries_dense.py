@@ -12,7 +12,7 @@ for nc in config.num_clusters:
     df = topics.copy()
     df["cluster"] = kmeans.fit_predict(query_embeddings)
 
-    result_file = f'{config.prog_dir}/grouped_queries/clustered_dev_queries_by_{nc}_scikit_dense.csv'
+    result_file = f'{config.prog_dir}/grouped_queries/clustered_dev_queries_scikit_dense_{nc}.csv'
     if os.path.exists(result_file):
         os.remove(result_file)
         print(f'{result_file} removed')

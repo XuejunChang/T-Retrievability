@@ -1,56 +1,73 @@
-from wsgiref.util import request_uri
-
-import numpy as np
-from ir_measures import *
-import pandas as pd
-import os, time, sys
+import math
+import os
 import subprocess
+import pandas as pd
 import config
-from pathlib import Path
+import glob
+import argparse
+"""
+map_values: a map instance
+"""
+def compute_gini(map_values):
+    values = sorted(map_values.values())
+    n = len(values)
+    if n == 0:
+        return 0.0
 
-def get_trec_queries(df, query_res_path):
-    if not os.path.exists(query_res_path):
-        print(f'saving into {query_res_path}')
-        df.to_csv(query_res_path, sep=' ', index=False, header=False)
-        print(f'saved')
-    else:
-        print(f'found {query_res_path}')
+    total = sum(values)
+    if total == 0:
+        return 0.0
 
-    return query_res_path
+    gini_numerator = sum((2 * (i + 1) - n - 1) * val for i, val in enumerate(values))
+    return gini_numerator / (n * total)
 
-def get_trec_qrels(df, qrels_res_path):
-    if os.path.exists(qrels_res_path):
-        print(f'found {qrels_res_path}')
-    else:
-        print(f'saving into {qrels_res_path}')
-        result = pd.DataFrame()
-        result['query_id'] = df['qid']
-        result['Q0'] = 0
-        result['doc_id'] = df['docno']
-        result['relevance'] = df['label']
+"""
+Note: the cluster values have been sorted in ascending order.
+"""
+def build_log_reciprocal_rank_map(filename, modelname, granu, km):
+    base_key = f'{modelname}_granu_{granu}_{km}'
+    rr_map = None
+    gini_map = {}
+    last_cluster = -1
+    with open(filename, 'r') as f:
+        for line in f:
+            parts = line.strip().split() # columns=["qid", "Q0", "docid", "rank", "score", "run", "cluster"]
+            if len(parts) < 4:
+                continue  # skip invalid lines
 
-        result.to_csv(qrels_res_path, sep=' ', index=False, header=False)
-        print(f'saved')
+            try:
+                cluster = int(parts[6])
+            except Exception:
+                continue
 
-    return qrels_res_path
+            docid = parts[2]
+            try:
+                rank = int(parts[3]) + 1
+                if rank <= 0:
+                    continue  # avoid invalid rank
+                rr = 1.0 / math.log(1 + rank)
 
-def save_trec_res(df, result_res_file, run_name):
-    if os.path.exists(result_res_file):
-        os.remove(result_res_file)
-        print(f'removed {result_res_file}')
+                if last_cluster == -1:
+                    rr_map = {}
+                elif cluster != last_cluster:
+                    cluster_key = f'{base_key}_{last_cluster}'
+                    gini_map[cluster_key] = compute_gini(rr_map)
+                    rr_map = {}
 
-    result = pd.DataFrame()
-    result['query_id'] = df['qid']
-    result['Q0'] = 'Q0'
-    result['doc_id'] = df['docid']
-    result['rank'] = df['rank']
-    result['score'] = df['score']
-    result['run_name'] = run_name
+                rr_map[docid] = rr_map.get(docid, 0.0) + rr
+                last_cluster = cluster
 
-    print(f'saving into {result_res_file}')
-    result.to_csv(result_res_file, sep=' ', index=False, header=False)
-    print(f'done')
+            except (ValueError, ZeroDivisionError, OverflowError):
+                continue  # skip malformed lines
+            except Exception as e:
+                print(f"Error occurred: {e}")
 
+    values = gini_map.values()
+    average = sum(values) / len(values)
+    minimum = min(values)
+    maximum = max(values)
+    return base_key, f'{minimum:.4f}', f'{average:.4f}', f'{maximum:.4f}'
+    
 def cal_metrics(qrels_path, docs_path):
     # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
     # all_metrics = [
@@ -83,9 +100,18 @@ def cal_metrics(qrels_path, docs_path):
 
 # model_name = sys.argv[1]
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Compute Gini coefficient.")
+    parser.add_argument("filename", help="Path to the input space-separated file")
+    args = parser.parse_args()
+
+    rr_map = build_log_reciprocal_rank_map(args.filename)
+    gini = compute_gini(rr_map)
+    print(f"Gini coefficient: {gini:.6f}")
+
     qrels_path = '/nfs/datasets/cxj/exposure-fairness/v1/qrels_dev.res'
     docs_path = '/nfs/datasets/cxj/exposure-fairness/v1/bm25_tctcolbert_100.res'
     qrels_path = f'{config.data_dir}/qrels_dev.res'
     docs_path = f'{config.data_dir}/bm25_100.res'
 
-    result = cal_metrics(qrels_path, docs_path)
+    # result = cal_metrics(qrels_path, docs_path)
+    # batch_convert_df2trec(f'{config.prog_dir}/grouped_queries')

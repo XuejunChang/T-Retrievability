@@ -38,7 +38,7 @@ for nc in num_clusters:
     # Retrieve queries from per cluster --- deprecated
     # sampled_queries = topics.groupby("cluster").progress_apply(lambda x: x.sample(n=min(nq, len(x)), random_state=42))
     
-    csv = f'/nfs/primary/retrievability-bias/results/new_clustered/clustered_dev_queries_by_{nc}_faiss.csv'
+    csv = f'/nfs/primary/retrievability-bias/results/new_clustered/clustered_dev_queries_faiss_{nc}.csv'
     print(f'saving into {csv}')
     topics.to_csv(csv, index=False)
     print('done')

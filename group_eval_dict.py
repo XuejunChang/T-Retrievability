@@ -14,11 +14,8 @@ import pyterrier as pt
 if not pt.java.started():
     pt.java.init()
 
-import ir_datasets
-import fair_utils
-import statistics
-import os, sys, time
-from pathlib import Path
+import fair_utils, convert
+import os, time
 import gini
 import config
 import argparse
@@ -38,23 +35,6 @@ def cacl_res_rscore(run_models, data_dir):
         else:
             print(f'found {rscore_csv}')
 
-def add_clusterid_to_res_df(num_clusters, run_models, data_dir, km=None):
-    for granu in num_clusters:
-        query_csv_path = f'{config.prog_dir}/grouped_queries/clustered_dev_queries_by_{granu}_{km}.csv'
-        cluster_q_df = pd.read_csv(query_csv_path, index_col=0).reset_index()
-        for modelname in run_models:
-            print(f'add_clusterid_to_res_df {granu} --> {modelname}')
-            result_csv_path = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_rscore.csv'
-            res_df = pd.read_csv(result_csv_path, index_col=0).reset_index()
-
-            merged_df = res_df.merge(cluster_q_df, on='qid', how='left')
-            merged_file_path = f'{data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_{granu}_{km}.csv'
-            if os.path.exists(merged_file_path):
-                os.remove(merged_file_path)
-                print(f'{merged_file_path} removed')
-            print(f'saving {merged_file_path}')
-            merged_df.to_csv(merged_file_path, index=False)
-            print('done')
 
 def calc_topical_gini(num_clusters, run_models, data_dir, km=None):
     start = time.time()
@@ -97,13 +77,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Accept multiple methods and models")
     parser.add_argument('--methods', nargs='+', help='Which methods to run')
     parser.add_argument('--models', nargs='+', help='Which models to be evaluated')
-    args = parser.parse_args()
 
+    args = parser.parse_args()
     run_models = args.models
     num_clusters = config.num_clusters
-    if 'add_clusterid' in args.methods:
-        cacl_res_rscore(run_models, config.data_dir)
-        add_clusterid_to_res_df(num_clusters, run_models, config.data_dir, km=km)
 
     if 'transform_trec' in args.methods:
         for modelname in run_models:
@@ -114,16 +91,35 @@ if __name__ == "__main__":
                     run_name = f'{modelname} res with {granu} clusters'
                     fair_utils.save_topical_trec_res(result_csv, run_name, config.data_dir)
 
-    if 'cal_group_gini' in args.methods:
+    if 'add_groupid_into_retrieved_res' in args.methods:
         for modelname in run_models:
-            for granu in num_clusters:
-                for km in config.kmeans_vec:
-                    csv_path = f'{config.data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_{granu}_{km}.csv'
-                    df = pd.read_csv(csv_path, index_col=0).reset_index()
-                    run_name = os.path.splitext(csv_path)[0].split('/')[-1]
-                    res_path = os.path.splitext(csv_path)[0]+ '.res'
-                    fair_utils.save_trec_res(df,res_path,run_name)
+            res_path = f'{config.data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}.res'
+            print(f'processing {res_path}')
+            columns = ["qid", "Q0", "docid", "rank", "score", "run"]
+            doc_df = convert.convert_res2docdf(res_path, columns=columns)
 
-                    rr_map = fair_utils.build_log_reciprocal_rank_map(res_path)
-                    topic_gini = fair_utils.compute_gini(rr_map)
+            for km in config.kmeans_vec:
+                for granu in num_clusters:
+                    query_path = f'{config.data_dir}/grouped_queries/clustered_dev_queries_{km}_{granu}.csv'
+                    query_df = pd.read_csv(query_path, index_col=0).reset_index()
+
+                    # columns = ['qid', 'Q0', 'docid', 'rank', 'score', 'run', 'cluster']
+                    merged_df = doc_df.merge(query_df[['qid', 'cluster']], on='qid', how='left')
+                    merged_df = merged_df.sort_values(by=['cluster'])
+
+                    merged_file_path = f'{os.path.splitext(res_path)[0]}_{km}_{granu}_with_groupid.res'
+                    run_name = os.path.splitext(merged_file_path)[0].split('/')[-1]
+                    convert.convert_dfall2trec(merged_df, merged_file_path)
+
+    if 'cal_topical_gini' in args.methods:
+        for modelname in run_models:
+            for km in config.kmeans_vec:
+                for granu in num_clusters:
+                    start = time.time()
+                    res_path = f'{config.data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}_{km}_{granu}_with_groupid.res'
+                    print(f'processing {res_path}')
+                    base_key, min, avg, max = fair_utils.build_log_reciprocal_rank_map(res_path, modelname, granu, km)
+                    print(f'{base_key}, min:{min}, avg:{avg}, max:{max}')
+                    end = time.time()
+                    print(f'Processing {res_path} takes {end-start} seconds')
 
