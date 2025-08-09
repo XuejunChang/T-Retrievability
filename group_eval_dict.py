@@ -121,5 +121,5 @@ if __name__ == "__main__":
                     base_key, min, avg, max = fair_utils.build_log_reciprocal_rank_map(res_path, modelname, granu, km)
                     print(f'{base_key}, min:{min}, avg:{avg}, max:{max}')
                     end = time.time()
-                    print(f'Processing {res_path} takes {end-start} seconds')
+                    print(f'Processing takes {(end-start):.2f} seconds')
 

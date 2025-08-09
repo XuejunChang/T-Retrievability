@@ -14,7 +14,7 @@ topics_name = 'dev'
 
 dataset = pt.get_dataset(f'irds:{dataset_name}')
 dev = pt.get_dataset(f'irds:msmarco-passage/dev')
-corpus_df  = pd.DataFrame(dev.get_corpus_iter(verbose=True))
+# corpus_df  = pd.DataFrame(dev.get_corpus_iter(verbose=True))
 topics = dev.get_topics()
 qrels = dev.get_qrels()
 

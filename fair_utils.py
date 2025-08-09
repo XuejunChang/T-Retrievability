@@ -1,10 +1,11 @@
-import math
-import os
-import subprocess
-import pandas as pd
-import config
-import glob
 import argparse
+import math
+import evaluate
+import subprocess
+
+import config
+import convert
+
 """
 map_values: a map instance
 """
@@ -25,7 +26,7 @@ def compute_gini(map_values):
 Note: the cluster values have been sorted in ascending order.
 """
 def build_log_reciprocal_rank_map(filename, modelname, granu, km):
-    base_key = f'{modelname}_granu_{granu}_{km}'
+    base_key = f'{modelname}_{km}_{granu}'
     rr_map = None
     gini_map = {}
     last_cluster = -1
@@ -67,7 +68,10 @@ def build_log_reciprocal_rank_map(filename, modelname, granu, km):
     minimum = min(values)
     maximum = max(values)
     return base_key, f'{minimum:.4f}', f'{average:.4f}', f'{maximum:.4f}'
-    
+
+def cut_df(df, cut_off):
+    return df.groupby("qid", group_keys=False).head(cut_off).reset_index()
+
 def cal_metrics(qrels_path, docs_path):
     # ensure that cp /mnt/primary/exposure-fairness/trec_eval /usr/local/bin/
     # all_metrics = [
@@ -82,21 +86,23 @@ def cal_metrics(qrels_path, docs_path):
     #     "F.5", "F.10", "F.20", "F", "relstring"
     # ]
 
-    metrics = ["ndcg_cut.10", "map", "recip_rank", "P.10"]
+    # metrics = ["ndcg_cut.10", "map", "recip_rank", "P.10"]
+    metrics = ["ndcg_cut.10", "map"]
     args = []
     for metric in metrics:
         args.append('-m')
         args.append(metric)
     cmd = ["trec_eval"] + args + [qrels_path, docs_path]
-    print(cmd)
+    # print(cmd)
     result = subprocess.run(cmd, capture_output=True, text=True)
     metric_dict = {}
     for line in result.stdout.splitlines():
         arr = line.split()
         metric_dict[arr[0]] = float(arr[-1])
 
-    print(metric_dict)
-    return metric_dict
+    # print(metric_dict)
+    sorted_dict = {k: metric_dict[k] for k in sorted(metric_dict, reverse=True)}
+    return sorted_dict
 
 # model_name = sys.argv[1]
 if __name__ == '__main__':

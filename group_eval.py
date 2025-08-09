@@ -86,7 +86,7 @@ def calc_topical_gini(num_clusters, run_model, data_dir, km=None):
 
             res = []
             for group_id, df in grouped_df:
-                sum_rscores = df.groupby("docno")[['r_score']].sum().reset_index()
+                sum_rscores = df.groupby("docno")['r_score'].sum().reset_index()
                 print('calc group_gini')
                 group_gini = gini.compute_gini(sum_rscores['r_score'].to_dict())
                 print(f'group_gini: {group_gini}')

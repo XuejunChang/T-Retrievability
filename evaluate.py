@@ -4,12 +4,13 @@ if not pt.java.started():
     pt.java.init()
 from tqdm import tqdm
 import pyterrier_dr
-import config, fair_utils, gini
+import config, fair_utils, convert
 import os, sys, numpy as np
 from more_itertools import chunked
 from sentence_transformers import SentenceTransformer
+import argparse
 
-def encode_trec_res(res_file_path):
+def encode_trec_res(res_file_path, batch_size):
     trec_df = fair_utils.convert_res2df(res_file_path)
     trec_df = trec_df.merge(config.corpus_df, how="left", on="docno")
     texts = trec_df["text"].tolist()
@@ -37,63 +38,70 @@ def diversify(trec_df, res_file_path, lbda):
     fair_utils.save_trec_res(result_df,result_res_path,run_name)
     print('done')
 
-def get_every_doc_rscore(res_file_path):
-    rscore_path = os.path.splitext(res_file_path)[0] + "_rscore.csv"
-    if os.path.exists(rscore_path):
-        print(f'loading {rscore_path}')
-        df = pd.read_csv(rscore_path, index_col=0).reset_index()
-        print('loaded')
-    else:
-        df  = fair_utils.convert_res2df(res_file_path)
-        print('calc r_score of each document of the retrieved docs ...')
-        df['r_score'] = df['rank'].progress_apply(lambda x: 1.0 / np.log(x + 2))
+def get_every_doc_rscore(res_file_path,columns=None):
+    rscore_csv_path = os.path.splitext(res_file_path)[0] + "_rscore.csv"
+    if os.path.exists(rscore_csv_path):
+        print(f'Exists {rscore_csv_path}')
+        # df = pd.read_csv(rscore_csv_path, index_col=0).reset_index()
+        # print('loaded')
+        os.remove(rscore_csv_path)
+        print('removed')
 
-        print(f'saving into {rscore_path}')
-        df.to_csv(rscore_path, index=False)
-        print(f'done')
+    df  = convert.convert_res2docdf(res_file_path, columns=columns)
+    print('calc r_score of each document of the retrieved docs ...')
+    df['r_score'] = df['rank'].progress_apply(lambda x: 1.0 / np.log(x + 2))
+
+    print(f'saving into {rscore_csv_path}')
+    df.to_csv(rscore_csv_path, index=False)
+    print(f'done')
+
+    rscore_res_path = f'{os.path.splitext(rscore_csv_path)[0]}.res'
+    convert.convert_dfall2trec(df, rscore_res_path)
+    print(f'done')
 
     return df
 
-def cut_df(res_file_path, cut_off):
-    diver_df = fair_utils.convert_res2df(res_file_path)
-    cutted_df = diver_df.groupby("qid", group_keys=False).head(cut_off).reset_index()
-
-    cutted_csv_path = f'{os.path.splitext(res_file_path)[0]}_cut{cut_off}.csv'
-    print(f'saving into {cutted_csv_path}')
-    cutted_df.to_csv(cutted_csv_path, index=False)
-    print('done')
-
-    cutted_res_path = f'{os.path.splitext(cutted_csv_path)[0]}.res'
-    run_name = os.path.splitext(cutted_res_path)[0].split('/')[-1]
-    print(f'saving trec res into {cutted_res_path}')
-    fair_utils.save_trec_res(cutted_df, cutted_res_path, run_name)
-    print('done')
-
-def evaluate_coll_gini(res_file_path):
-    df = get_every_doc_rscore(res_file_path)
-    summed_doc_rscores = df.groupby("docno")[['r_score']].sum().reset_index()
+def evaluate_coll_gini(res_file_path, columns=None):
+    df = get_every_doc_rscore(res_file_path, columns=columns)
+    summed_doc_rscores = df.groupby("docid")[['r_score']].sum().reset_index()
     print('calc coll_gini')
-    coll_gini = gini.compute_gini(summed_doc_rscores['r_score'].to_dict())
-    print(f'coll_gini: {coll_gini:.4f}')
-
+    coll_gini = fair_utils.compute_gini(summed_doc_rscores['r_score'].to_dict())
     return coll_gini
 
 def evaluate_metrics(qrels_res, res_file_path):
     return fair_utils.cal_metrics(qrels_res, res_file_path)
 
-cut_off = 20
-batch_size = 32
+def evaluate_res_gini_metrics(res_file_path, cut_off, columns=None):
+    print(f'cutting {res_file_path} by top {cut_off}')
+    df = convert.convert_res2docdf(res_file_path, columns=columns)
 
-retr_num = sys.argv[1]
-run = sys.argv[2:]
+    df_cut20 = fair_utils.cut_df(df, cut_off)
+    df_cut20_res = f'{os.path.splitext(res_file_path)[0]}_cut{cut_off}.res'
+    run_name = os.path.splitext(df_cut20_res)[0].split('/')[-1]
+    convert.convert_docdf2_trec(df_cut20, df_cut20_res, run_name)
+
+    gini = evaluate_coll_gini(df_cut20_res,columns=columns)
+    # mertrics = evaluate_metrics(qrels_res, df_cut20_res)
+    return gini, None
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Accept multiple methods and models")
+    parser.add_argument('--run', nargs='+', help='Which function to be ran')
+    args = parser.parse_args()
+    run = args.run
+
+    retr_num = 100
+    cut_off = 20
+    qrels_res = f'{config.data_dir}/qrels_dev.res'
+
     if 'diversify' in run:
+        batch_size = 32
         model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+        # model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1")
         for modelname in config.models:
             res_file = f'{modelname}_msmarco-passage_dev_{retr_num}.res'
             res_file_path = f'{config.data_dir}/{res_file}'
-            trec_df = encode_trec_res(res_file_path)
+            trec_df = encode_trec_res(res_file_path, batch_size)
             for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
                 diversify(trec_df, res_file_path, lbda)
 
@@ -108,18 +116,23 @@ if __name__ == '__main__':
             for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:
                 res_file = f'{os.path.splitext(res_file)[0]}_lbda{lbda}.res'
                 res_file_path = f'{config.data_dir}/{res_file}'
-                cut_df(res_file_path, cut_off)
+                fair_utils.cut_df(res_file_path, cut_off)
 
     if 'cut_df' in run:
         for modelname in config.models:
-            res_file = f'{modelname}_msmarco-passage_dev_{retr_num}.res'
-            print(f'cutting {res_file} into {cut_off}')
-            res_file_path = f'{config.data_dir}/{res_file}'
-            cut_df(res_file_path, cut_off)
+            # res_file_path = f'{config.data_dir}/{modelname}_msmarco-passage_dev_100.res'
+            res_file_path = f'{config.data_dir}/{modelname}_msmarco-passage_dev_{retr_num}_mab_iteration_100.res'
+            columns = ['qid', 'Q0', 'docid', 'rank', 'score', 'run']
+
+            g100, metrics100 = evaluate_res_gini_metrics(res_file_path, cut_off, columns=columns)
+
+            res_file_path = f'/mnt/datasets/cxj/exposure-fairness-extend/{modelname}_msmarco-passage_dev_200.res'
+            g200, metrics200 = evaluate_res_gini_metrics(res_file_path, cut_off, columns=columns)
+            # print(f'{modelname},g100:{g100:.4f}, g200:{g200:.4f}, metrics100: {metrics100}, metrics200: {metrics200}')
+            print(f'{modelname},g100:{g100:.4f}, g200:{g200:.4f}')
 
     if 'evaluate_coll_lambda' in run:
         res_list = []
-        qrels_res = f'{config.data_dir}/qrels_dev.res'
         for modelname in config.models:
             res_file = f'{modelname}_msmarco-passage_dev_200.res'
             for lbda in [0.0, 0.25, 0.5, 0.75, 0.9]:

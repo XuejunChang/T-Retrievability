@@ -5,20 +5,20 @@ import config
 def convert_docdf2_trec(df, res_file_path, run_name):
     if os.path.exists(res_file_path):
         print(f'Exists {res_file_path}')
-        os.remove(res_file_path)
-        print(f'removed {res_file_path}')
+        # os.remove(res_file_path)
+        # print(f'removed.')
+    else:
+        result = pd.DataFrame()
+        result['query_id'] = df['qid']
+        result['Q0'] = 'Q0'
+        result['doc_id'] = df['docid']
+        result['rank'] = df['rank']
+        result['score'] = df['score']
+        result['run_name'] = run_name
 
-    result = pd.DataFrame()
-    result['query_id'] = df['qid']
-    result['Q0'] = 'Q0'
-    result['doc_id'] = df['docid']
-    result['rank'] = df['rank']
-    result['score'] = df['score']
-    result['run_name'] = run_name
-
-    print(f'saving into {res_file_path}')
-    result.to_csv(res_file_path, sep=' ', index=False, header=False)
-    print(f'saved')
+        print(f'saving into {res_file_path}')
+        result.to_csv(res_file_path, sep=' ', index=False, header=False)
+        print(f'saved')
 
 def convert_dfall2trec(df, file_path):
     if os.path.exists(file_path):
