@@ -1,12 +1,11 @@
-import numpy as np, pandas as pd
-import os,sys, glob
+import glob
+import os
+import pandas as pd
 import config
 
 def convert_docdf2_trec(df, res_file_path, run_name):
     if os.path.exists(res_file_path):
         print(f'Exists {res_file_path}')
-        # os.remove(res_file_path)
-        # print(f'removed.')
     else:
         result = pd.DataFrame()
         result['query_id'] = df['qid']
@@ -24,7 +23,7 @@ def convert_dfall2trec(df, file_path):
     if os.path.exists(file_path):
         print(f'Exists {file_path}')
         os.remove(file_path)
-        print(f'removed {file_path}')
+        print(f'removed.')
 
     print(f'saving into {file_path}')
     df.to_csv(file_path, sep=' ', index=False, header=False) # qid query
@@ -41,26 +40,12 @@ def batch_convert_df2trec(query_dir):
         convert_dfall2trec(df, query_res_path)
 
 def convert_res2docdf(res_file_path, columns=None):
-    print(f'converting {res_file_path} into a dataframe')
+    print(f'convert_res2docdf from {res_file_path}')
     df = pd.read_csv(res_file_path, sep=r"\s+", names=columns)
+    df['docno'] = df['docid']
+    df[['qid', 'docid', 'docno']] = df[['qid', 'docid', 'docno']].astype(str)
     print('done')
     return df
-
-def convert_qrels2_trec(df, qrels_res_path):
-    if os.path.exists(qrels_res_path):
-        print(f'Exists {qrels_res_path}')
-        os.remove(qrels_res_path)
-        print(f'removed {qrels_res_path}')
-
-    result = pd.DataFrame()
-    result['query_id'] = df['qid']
-    result['Q0'] = 0
-    result['doc_id'] = df['docno']
-    result['relevance'] = df['label']
-
-    print(f'saving into {qrels_res_path}')
-    result.to_csv(qrels_res_path, sep=' ', index=False, header=False)
-    print(f'saved')
 
 if __name__ == '__main__':
     for modelname in config.models:
@@ -70,8 +55,6 @@ if __name__ == '__main__':
         res = os.path.splitext(csv)[0] + '.res'
         convert_docdf2_trec(df, res, run_name)
 
-    # qrels_res_path = f'{config.data_dir}/qrels_dev.res'
-    # qrels_path = convert_qrels2_trec(config.qrels, qrels_res_path)
 
 
 

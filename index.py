@@ -4,8 +4,7 @@ import pyterrier as pt
 if not pt.java.started():
     pt.java.init()
 
-import os, sys, pandas as pd
-import fair_utils
+import sys
 import config
 import pyt_splade
 import pyterrier_dr
@@ -34,28 +33,20 @@ def create_tctcolbert_index(index_path, dataset):
 
     return index_path
 
-
-# order of args: [version] retrieve
-version = sys.argv[1]
-data_dir = f'{config.data_dir}/{version}'
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
-
-models = sys.argv[2:]
-
+modelname = sys.argv[1]
 if __name__ == '__main__':
-    if 'bm25' in models:
-        index_path = f"{data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
+    if modelname == 'bm25':
+        index_path = f"{config.data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
         create_bm25_index(index_path, config.dataset)
 
-    if 'splade' in models:
+    if modelname == 'splade':
         model = pyt_splade.Splade()
-        index_path = f"{data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
+        index_path = f"{config.data_dir}/{modelname}-{config.dataset_name}-nostemmer-nostopwords-index"
         create_splade_index(index_path, config.dataset)
 
-    if 'tctcolbert' in models:
+    if modelname == 'tctcolbert':
         model = pyterrier_dr.TctColBert('castorini/tct_colbert-v2-hnp-msmarco', batch_size=16, verbose=True)
-        index_path = f"{data_dir}/{modelname}-{config.dataset_name}-index.flex"
+        index_path = f"{config.data_dir}/{modelname}-{config.dataset_name}-index.flex"
         create_tctcolbert_index(index_path, config.dataset)
 
 

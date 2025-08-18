@@ -1,25 +1,9 @@
 import numpy as np
 from tqdm import tqdm
-
 tqdm.pandas()
-
 import pandas as pd
-
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_colwidth', 100)
-
-import pyterrier as pt
-
-if not pt.java.started():
-    pt.java.init()
-
-import ir_datasets
 import fair_utils
-import statistics
-import os, sys, time
-from pathlib import Path
-import gini
+import os, time
 import config
 import argparse
 
@@ -75,7 +59,6 @@ def query_clusterid_to_res_df(num_clusters, run_model, data_dir, km=None):
             print('done')
 
 def calc_topical_gini(num_clusters, run_model, data_dir, km=None):
-    start = time.time()
     for modelname in run_model:
         model_granularities = []
         for granu in num_clusters:
@@ -88,7 +71,7 @@ def calc_topical_gini(num_clusters, run_model, data_dir, km=None):
             for group_id, df in grouped_df:
                 sum_rscores = df.groupby("docno")['r_score'].sum().reset_index()
                 print('calc group_gini')
-                group_gini = gini.compute_gini(sum_rscores['r_score'].to_dict())
+                group_gini = fair_utils.compute_gini(sum_rscores['r_score'].to_dict())
                 print(f'group_gini: {group_gini}')
                 res.append([modelname, granu, group_id, group_gini])
 
@@ -108,9 +91,6 @@ def calc_topical_gini(num_clusters, run_model, data_dir, km=None):
         result_csv.to_csv(result_csv_path, index=False)
         print('done')
 
-    end = time.time()
-    print(f'calc_topical_gini total time: {(end - start) / 60} minutes')
-
 def transform_topical_trec_res(num_clusters, run_model, data_dir, km=None):
     for modelname in run_model:
         for granu in num_clusters:
@@ -122,26 +102,21 @@ def transform_topical_trec_res(num_clusters, run_model, data_dir, km=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Accept multiple methods and models")
-    parser.add_argument('--version', help='Which version')
     parser.add_argument('--methods', nargs='+', help='Which methods to run')
     parser.add_argument('--km', help='Which K-means to run')
     parser.add_argument('--models', nargs='+', help='Which models to be evaluated')
     args = parser.parse_args()
-
-    version = args.version
-    data_dir = f'{config.data_dir}/{version}'
-    os.makedirs(data_dir, exist_ok=True)
 
     run_model = args.models
     km = args.km
     print(f'kmeans: {km}')
     num_clusters = config.num_clusters
     if 'add_clusterid' in args.methods:
-        cacl_res_rscore(run_model, data_dir)
-        add_clusterid_to_res_df(num_clusters, run_model, data_dir, km=km)
+        cacl_res_rscore(run_model, config.data_dir)
+        add_clusterid_to_res_df(num_clusters, run_model, config.data_dir, km=km)
 
     if 'calc_gini' in args.methods:
-        calc_topical_gini(num_clusters, run_model, data_dir, km=km)
+        calc_topical_gini(num_clusters, run_model, config.data_dir, km=km)
 
     if 'transform_trec' in args.methods:
-        transform_topical_trec_res(num_clusters, run_model, data_dir, km=km)
+        transform_topical_trec_res(num_clusters, run_model, config.data_dir, km=km)
