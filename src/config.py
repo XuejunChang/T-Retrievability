@@ -3,9 +3,9 @@ import pyterrier as pt
 if not pt.java.started():
     pt.java.init()
 
-prog_dir = '/mnt/primary/exposure-fairness'
-# data_dir = '/mnt/datasets/cxj/exposure-fairness'
-data_dir = '/home/xuejunchang/OneDrive/PhD/projects/mnt/primary/exposure-fairness-extend/data/'
+prog_dir = '/mnt/primary/T-Retrievability'
+data_dir = '/mnt/primary/T-Retrievability/retrieved_trec_files'
+# data_dir = '/home/xuejunchang/OneDrive/PhD/projects/mnt/primary/T-Retrievability/data/'
 os.makedirs(data_dir, exist_ok=True)
 
 retrieve_num = 100

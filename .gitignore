@@ -7,3 +7,4 @@ output/
 **/events.out.tfevents.*
 __pycache__/
 .idea/
+retrieved_trec_files/*.res

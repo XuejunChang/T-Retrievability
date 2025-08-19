@@ -2,29 +2,29 @@
 
 Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
 
-![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/result_graphs/aggr_gini_scikit_dense.pdf)
+![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/result_graphs/aggr_gini_scikit_dense.png)
 
-![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/result_graphs/aggr_gini_scikit_tfidf.pdf)
+![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/result_graphs/aggr_gini_scikit_tfidf.png)
 
 ## Installation
 
 ```bash
-# decompress:
-cd retrieved_trec_files/ && xz -d *.xz
+# decompress TREC files. Note that there is enough disk space.
+./decompress.sh
 ```
 
 ## Run
 
-Collection-level Gini evaluation:
+Collection-level Gini evaluation. For example, bm25:
 
 ```bash
-cd src/ && collection-eval.py
+cd src/ && collection-eval.py "../retrieved_trec_files/bm25_monot5_msmarco-passage_dev_100.res"
 ```
 
-Topical Gini evaluation:
+Topical Gini evaluation. For example, bm25:
 
 ```bash
-cd src/ && topical_eval.py
+cd src/ && topical_eval.py "../retrieved_trec_files/bm25_monot5_msmarco-passage_dev_100.res" "../grouped_queries/clustered_dev_queries_by_5000_scikit_tfidf.csv"  
 ```
 
 # Citation
