@@ -2,9 +2,9 @@
 
 Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
 
-![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/result_graphs/aggr_gini_scikit_dense.png)
+![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/results/aggr_gini_scikit_dense.png)
 
-![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/result_graphs/aggr_gini_scikit_tfidf.png)
+![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/results/aggr_gini_scikit_tfidf.png)
 
 ## Installation
 
