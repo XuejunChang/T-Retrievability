@@ -18,7 +18,7 @@ Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieva
 Collection-level Gini evaluation. For example, bm25:
 
 ```bash
-cd src/ && collection-eval.py "../retrieved_trec_files/bm25_monot5_msmarco-passage_dev_100.res"
+cd src/ && collection_eval.py "../retrieved_trec_files/bm25_monot5_msmarco-passage_dev_100.res"
 ```
 
 Topical Gini evaluation. For example, bm25:
