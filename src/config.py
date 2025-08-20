@@ -3,8 +3,8 @@ import pyterrier as pt
 if not pt.java.started():
     pt.java.init()
 
-prog_dir = '/mnt/primary/T-Retrievability'
-data_dir = '/mnt/primary/T-Retrievability/retrieved_trec_files'
+proj_dir = os.path.expanduser('~/T-Retrievability')
+data_dir = f'{proj_dir}/trec_files'
 os.makedirs(data_dir, exist_ok=True)
 
 retrieve_num = 100

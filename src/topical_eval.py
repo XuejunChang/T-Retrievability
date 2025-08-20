@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from tqdm import tqdm
 
@@ -28,20 +30,19 @@ def calc_topical_gini(trec_df, cluster_q_df):
 
 
 # trec_file_path = f'{config.data_dir}/{modelname}_{config.dataset_name}_{config.topics_name}_{config.retrieve_num}'
-# clustered_queries_path = f'{config.prog_dir}/grouped_queries/clustered_dev_queries_by_{granu}_{kmeans_vec}.csv'
+# clustered_queries_path = f'{config.proj_dir}/grouped_queries/clustered_dev_queries_by_{granu}_{kmeans_vec}.csv'
+
+retrieved_res_file = sys.argv[1]
+clustered_queries = sys.argv[2]
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Accept one model name, a vector representation for K-means and the number of groups")
-    parser.add_argument('--trec_file_path', help='The path of the trec file')
-    parser.add_argument('--clustered_queries_path', help='The path of the clustered queries')
+    retrieved_res_path = f'{config.data_dir}/{retrieved_res_file}'
+    clustered_queries_path = f'{config.proj_dir}/grouped_queries/{clustered_queries}'
 
-    args = parser.parse_args()
-    trec_file_path = args.trecfile
-    clustered_queries_path = args.clustered_queries_path
-
-    trec_df = convert.convert_res2docdf(trec_file_path, config.trec_res_columns)
+    trec_df = convert.convert_res2docdf(retrieved_res_path, config.trec_res_columns)
     cluster_q_df = pd.read_csv(clustered_queries_path, index_col=0).reset_index()
     cluster_q_df['qid'] = cluster_q_df['qid'].astype(str)
 
     min_gini, mean_gini, max_gini = calc_topical_gini(trec_df, cluster_q_df)
+    # print(f'min_gini: {min_gini:.4f}, mean_gini: {mean_gini:.4f}, max_gini: {max_gini:.4f}')
     print(f'min_gini: {min_gini}, mean_gini: {mean_gini}, max_gini: {max_gini}')
 

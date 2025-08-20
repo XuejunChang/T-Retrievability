@@ -7,9 +7,11 @@ Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieva
 ![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_scikit_tfidf.png)
 
 ## Installation
+Using git clone into user home directory is recommended. Otherwise, you need to check the directory configurations, such as config.py, plot.ipynb.
 
 ```bash
-# decompress TREC files. Note that there is enough disk space.
+# decompress TREC files. Note that there is enough disk space. 
+cd ./T-Retrievability
 ./decompress.sh
 ```
 
@@ -18,13 +20,13 @@ Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieva
 Collection-level Gini evaluation. For example, bm25:
 
 ```bash
-cd src/ && collection_eval.py "../retrieved_trec_files/bm25_monot5_msmarco-passage_dev_100.res"
+python ./src/collection_eval.py "bm25_msmarco-passage_dev_100.res"
 ```
 
 Topical Gini evaluation. For example, bm25:
 
 ```bash
-cd src/ && topical_eval.py "../retrieved_trec_files/bm25_monot5_msmarco-passage_dev_100.res" "../grouped_queries/clustered_dev_queries_by_5000_scikit_tfidf.csv"  
+python ./src/topical_eval.py "bm25_msmarco-passage_dev_100.res" "clustered_dev_queries_by_5000_scikit_dense.csv"  
 ```
 
 # Citation
