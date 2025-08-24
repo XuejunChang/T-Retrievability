@@ -23,7 +23,7 @@ if __name__ == '__main__':
     print('computing collection-level effective metrics')
     metrics = fair_utils.compute_metrics(config.qrels_res_dev, retrieved_res_path)
 
-    print(f"nDCG@10: {metrics['ndcg_cut_10']}, map: {metrics['map']}, gini: f'{gini:.4f}'")
+    print(f"nDCG@10: {metrics['ndcg_cut_10']}, map: {metrics['map']}, gini: {gini:.4f}")
 
 
 

@@ -43,6 +43,5 @@ if __name__ == "__main__":
     cluster_q_df['qid'] = cluster_q_df['qid'].astype(str)
 
     min_gini, mean_gini, max_gini = calc_topical_gini(trec_df, cluster_q_df)
-    # print(f'min_gini: {min_gini:.4f}, mean_gini: {mean_gini:.4f}, max_gini: {max_gini:.4f}')
-    print(f'min_gini: {min_gini}, mean_gini: {mean_gini}, max_gini: {max_gini}')
+    print(f'min_gini: {min_gini:.4f}, mean_gini: {mean_gini:.4f}, max_gini: {max_gini:.4f}')
 
