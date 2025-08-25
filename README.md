@@ -2,9 +2,9 @@
 
 A Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
 
-![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_scikit_dense.png)
+![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_min_scikit_dense.pnghttps://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_mean_scikit_dense.png,https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_max_scikit_dense.png)
 
-![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_scikit_tfidf.png)
+![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_min_scikit_tfidf.png, https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_mean_scikit_tfidf.png, https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_max_scikit_tfidf.png)
 
 ## Installation
 Using user's home directory is recommended. Otherwise, you need to check the configurations in config.py and plot.ipynb.
@@ -19,7 +19,8 @@ conda env create -f environment.yml
 
 ```bash
 # decompress TREC files. Note that there is enough disk space. 
-cd src/ && ./decompress.sh
+cd ./src
+./decompress.sh
 ```
 
 ## Run
