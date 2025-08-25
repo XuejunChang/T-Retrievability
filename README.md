@@ -1,18 +1,25 @@
-# T-Retrievability:
+# T-Retrievability: A Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
 
-A Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
-
-# ![Localised measure using dense representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_min_scikit_dense.png, https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_mean_scikit_dense.png,https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_max_scikit_dense.png)
-<p style="text-align: center;">
+<p align="center">
   <img src="results/aggr_gini_min_scikit_dense.png" width="45%" />
   <img src="results/aggr_gini_mean_scikit_dense.png" width="45%" />
 </p>
-
-<p style="text-align: center;">
+<p align="center">
   <img src="results/aggr_gini_max_scikit_dense.png" width="45%" />
 </p>
 
-# ![Localised measure using tf-idf representations of documents for K-means](https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_min_scikit_tfidf.png, https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_mean_scikit_tfidf.png, https://github.com/XuejunChang/T-Retrievability/blob/main/results/aggr_gini_max_scikit_tfidf.png)
+Figure 1: Variations in the aggregated exposure fairness using K-means with dense vector representations for different granularity of topics (query groups).
+
+<p align="center">
+  <img src="results/aggr_gini_min_scikit_tfidf.png" width="45%" />
+  <img src="results/aggr_gini_mean_scikit_tfidf.png" width="45%" />
+</p>
+
+<p align="center">
+  <img src="results/aggr_gini_max_scikit_tfidf.png" width="45%" />
+</p>
+
+Figure 2: Variations in the aggregated exposure fairness using K-means with sparse tf-idf vectors for different granularity of topics (query groups).
 
 ## Installation
 Using user's home directory is recommended. Otherwise, you need to check the configurations in config.py and plot.ipynb.
