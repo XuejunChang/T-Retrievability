@@ -34,7 +34,7 @@ conda env create -f environment.yml
 
 ```bash
 # decompress TREC files. Note that there is enough disk space. 
-cd ./src
+cd ./T-Retrievability/src
 ./decompress.sh
 ```
 
