@@ -27,6 +27,7 @@ Using user's home directory is recommended. Otherwise, you need to check the con
 ```bash
 # Due to package dependencies, you need to create two conda environments.
 # Create an environment for Splade.
+cd ./T-Retrievability
 conda env create -f environment_splade.yml
 # Create an environment for other models.
 conda env create -f environment.yml 
@@ -34,7 +35,7 @@ conda env create -f environment.yml
 
 ```bash
 # decompress TREC files. Note that there is enough disk space. 
-cd ./T-Retrievability/src
+cd ./src
 ./decompress.sh
 ```
 
