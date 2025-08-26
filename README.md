@@ -1,25 +1,11 @@
 # T-Retrievability: A Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
 
 <p align="center">
-  <img src="results/aggr_gini_min_scikit_dense.png" width="45%" /> Minimum Gini
-  <img src="results/aggr_gini_mean_scikit_dense.png" width="45%" />
+  <img src="results/dense.png" width="600px" height="600px" />
 </p>
 <p align="center">
-  <img src="results/aggr_gini_max_scikit_dense.png" width="45%" />
+  <img src="results/tfidf.png" width="600px" height="600px" />
 </p>
-
-Figure 1: Variations in the aggregated exposure fairness using K-means with dense vector representations for different granularity of topics (query groups).
-
-<p align="center">
-  <img src="results/aggr_gini_min_scikit_tfidf.png" width="45%" />
-  <img src="results/aggr_gini_mean_scikit_tfidf.png" width="45%" />
-</p>
-
-<p align="center">
-  <img src="results/aggr_gini_max_scikit_tfidf.png" width="45%" />
-</p>
-
-Figure 2: Variations in the aggregated exposure fairness using K-means with sparse tf-idf vectors for different granularity of topics (query groups).
 
 ## Installation
 Using user's home directory is recommended. Otherwise, you need to check the configurations in config.py and plot.ipynb.
