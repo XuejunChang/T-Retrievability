@@ -1,7 +1,7 @@
 # T-Retrievability: A Topic-Focused Approach to Measure Fair Document Exposure in Information Retrieval
 
 <p align="center">
-  <img src="results/aggr_gini_min_scikit_dense.png" width="45%" />
+  <img src="results/aggr_gini_min_scikit_dense.png" width="45%" /> Minimum Gini
   <img src="results/aggr_gini_mean_scikit_dense.png" width="45%" />
 </p>
 <p align="center">
