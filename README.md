@@ -2,7 +2,7 @@
 The paper proposed a localised retrievability measure to conduct a more nuanced analysis of document exposure fairness in Information Retrieval, compared to collection-level analysis.
 
 <p align="center">
-  <img src="results/cikm25_paper_graphs.png" width="600px" height="600px" />
+  <img src="results/cikm25_paper_graphs.png"/>
 </p>
 
 ## Installation
