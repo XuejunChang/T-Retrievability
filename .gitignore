@@ -8,3 +8,5 @@ output/
 __pycache__/
 .idea/
 trec_files/*.res
+data/
+indexes/
